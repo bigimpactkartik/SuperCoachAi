@@ -14,16 +14,29 @@ import StudentDetailsModal from './components/StudentDetailsModal';
 import ConversationModal from './components/ConversationModal';
 import CreateStudentModal from './components/CreateStudentModal';
 import AuthPage from './components/AuthPage';
-import { Course, Student, SuperCoach, Conversation, StudentCourseEnrollment } from './types';
-import { mockCourses, mockStudents, mockSuperCoaches, mockConversations } from './data/mockData';
+import { Course, Student, SuperCoach, Conversation } from './types';
+import { useSupabase } from './hooks/useSupabase';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
-  const [courses, setCourses] = useState<Course[]>(mockCourses);
-  const [students, setStudents] = useState<Student[]>(mockStudents);
-  const [superCoaches, setSuperCoaches] = useState<SuperCoach[]>(mockSuperCoaches);
-  const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
+  
+  const {
+    courses,
+    students,
+    superCoaches,
+    conversations,
+    loading,
+    error,
+    createCourse,
+    updateCourse,
+    createCourseVersion,
+    makeCourseeLive,
+    createStudent,
+    createSuperCoach,
+    updateSuperCoach,
+    deleteSuperCoach
+  } = useSupabase();
   
   // Modal states
   const [showCreateCourse, setShowCreateCourse] = useState(false);
@@ -45,37 +58,52 @@ function App() {
     return <AuthPage onAuthenticated={() => setIsAuthenticated(true)} />;
   }
 
-  // Helper function to get the current version of a course by baseId
-  const getCurrentCourseVersion = (baseId: number): Course | null => {
-    return courses.find(c => c.baseId === baseId && c.isCurrentVersion) || null;
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading SuperCoach AI Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Connection Error</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const handleCreateCourse = async (courseData: Partial<Course>) => {
+    try {
+      await createCourse(courseData);
+      setShowCreateCourse(false);
+    } catch (err) {
+      console.error('Failed to create course:', err);
+      alert('Failed to create course. Please try again.');
+    }
   };
 
-  // Helper function to get course by ID and version
-  const getCourseByIdAndVersion = (courseId: number, version: number): Course | null => {
-    return courses.find(c => c.id === courseId && c.version === version) || null;
-  };
-
-  const handleCreateCourse = (courseData: Partial<Course>) => {
-    const newCourse: Course = {
-      id: Date.now(),
-      title: courseData.title || '',
-      description: courseData.description || '',
-      status: 'draft',
-      version: 1,
-      modules: courseData.modules || [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      enrolledStudents: 0,
-      completionRate: 0,
-      superCoachId: null,
-      baseId: Date.now(), // New base ID for new course
-      isCurrentVersion: true
-    };
-    setCourses([...courses, newCourse]);
-    setShowCreateCourse(false);
-  };
-
-  const handleEditCourse = (courseData: Partial<Course>) => {
+  const handleEditCourse = async (courseData: Partial<Course>) => {
     if (!selectedCourse) return;
     
     // Prevent editing live courses
@@ -84,42 +112,26 @@ function App() {
       return;
     }
     
-    const updatedCourse = {
-      ...selectedCourse,
-      ...courseData,
-      updatedAt: new Date().toISOString()
-    };
-    
-    setCourses(courses.map(c => c.id === selectedCourse.id ? updatedCourse : c));
-    setShowEditCourse(false);
-    setSelectedCourse(null);
+    try {
+      await updateCourse(selectedCourse.id, courseData);
+      setShowEditCourse(false);
+      setSelectedCourse(null);
+    } catch (err) {
+      console.error('Failed to update course:', err);
+      alert('Failed to update course. Please try again.');
+    }
   };
 
-  const handleCreateVersion = (courseId: number) => {
-    const course = courses.find(c => c.id === courseId);
-    if (!course) return;
-
-    // Mark current version as not current
-    setCourses(prevCourses => prevCourses.map(c => 
-      c.baseId === course.baseId ? { ...c, isCurrentVersion: false } : c
-    ));
-
-    const newVersion: Course = {
-      ...course,
-      id: Date.now(),
-      version: course.version + 1,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      enrolledStudents: 0,
-      completionRate: 0,
-      isCurrentVersion: true
-    };
-    
-    setCourses(prevCourses => [...prevCourses, newVersion]);
+  const handleCreateVersion = async (courseId: number) => {
+    try {
+      await createCourseVersion(courseId);
+    } catch (err) {
+      console.error('Failed to create course version:', err);
+      alert('Failed to create course version. Please try again.');
+    }
   };
 
-  const handleMakeLive = (courseId: number) => {
+  const handleMakeLive = async (courseId: number) => {
     const course = courses.find(c => c.id === courseId);
     if (!course) return;
 
@@ -141,79 +153,48 @@ function App() {
       return;
     }
 
-    setCourses(courses.map(c => 
-      c.id === courseId 
-        ? { ...c, status: 'live', updatedAt: new Date().toISOString() }
-        : c
-    ));
-  };
-
-  const handleCreateStudent = (studentData: Partial<Student>, courseId?: number) => {
-    const newStudent: Student = {
-      id: Date.now(),
-      name: studentData.name || '',
-      email: studentData.email || '',
-      status: 'new',
-      enrolledCourses: [],
-      progress: [],
-      joinedAt: new Date().toISOString(),
-      lastActivity: 'Just joined'
-    };
-
-    // If a course was selected, enroll student in the current version
-    if (courseId) {
-      const course = courses.find(c => c.id === courseId);
-      if (course) {
-        const enrollment: StudentCourseEnrollment = {
-          courseId: course.id,
-          courseVersion: course.version,
-          enrolledAt: new Date().toISOString(),
-          baseId: course.baseId || course.id
-        };
-        newStudent.enrolledCourses = [enrollment];
-
-        // Update course enrollment count
-        setCourses(courses.map(c => 
-          c.id === courseId 
-            ? { ...c, enrolledStudents: c.enrolledStudents + 1 }
-            : c
-        ));
-      }
+    try {
+      await makeCourseeLive(courseId);
+    } catch (err) {
+      console.error('Failed to make course live:', err);
+      alert('Failed to make course live. Please try again.');
     }
-
-    setStudents([...students, newStudent]);
-    setShowCreateStudent(false);
   };
 
-  const handleCreateSuperCoach = (superCoachData: Partial<SuperCoach>) => {
-    const newSuperCoach: SuperCoach = {
-      id: Date.now(),
-      name: superCoachData.name || '',
-      personalityType: superCoachData.personalityType || 'friendly',
-      description: superCoachData.description || '',
-      avatar: superCoachData.avatar || '',
-      coursesAssigned: [],
-      createdAt: new Date().toISOString(),
-      isActive: true
-    };
-    setSuperCoaches([...superCoaches, newSuperCoach]);
-    setShowCreateSuperCoach(false);
+  const handleCreateStudent = async (studentData: Partial<Student>, courseId?: number) => {
+    try {
+      await createStudent(studentData, courseId);
+      setShowCreateStudent(false);
+    } catch (err) {
+      console.error('Failed to create student:', err);
+      alert('Failed to create student. Please try again.');
+    }
   };
 
-  const handleEditSuperCoach = (superCoachData: Partial<SuperCoach>) => {
+  const handleCreateSuperCoach = async (superCoachData: Partial<SuperCoach>) => {
+    try {
+      await createSuperCoach(superCoachData);
+      setShowCreateSuperCoach(false);
+    } catch (err) {
+      console.error('Failed to create super coach:', err);
+      alert('Failed to create super coach. Please try again.');
+    }
+  };
+
+  const handleEditSuperCoach = async (superCoachData: Partial<SuperCoach>) => {
     if (!selectedSuperCoach) return;
     
-    const updatedSuperCoach = {
-      ...selectedSuperCoach,
-      ...superCoachData
-    };
-    
-    setSuperCoaches(superCoaches.map(sc => sc.id === selectedSuperCoach.id ? updatedSuperCoach : sc));
-    setShowEditSuperCoach(false);
-    setSelectedSuperCoach(null);
+    try {
+      await updateSuperCoach(selectedSuperCoach.id, superCoachData);
+      setShowEditSuperCoach(false);
+      setSelectedSuperCoach(null);
+    } catch (err) {
+      console.error('Failed to update super coach:', err);
+      alert('Failed to update super coach. Please try again.');
+    }
   };
 
-  const handleDeleteSuperCoach = (superCoachId: number) => {
+  const handleDeleteSuperCoach = async (superCoachId: number) => {
     const superCoach = superCoaches.find(sc => sc.id === superCoachId);
     if (!superCoach) return;
 
@@ -224,85 +205,26 @@ function App() {
     }
 
     if (confirm('Are you sure you want to delete this SuperCoach? This action cannot be undone.')) {
-      setSuperCoaches(superCoaches.filter(sc => sc.id !== superCoachId));
+      try {
+        await deleteSuperCoach(superCoachId);
+      } catch (err) {
+        console.error('Failed to delete super coach:', err);
+        alert('Failed to delete super coach. Please try again.');
+      }
     }
   };
 
+  // Note: Student enrollment management would need additional API endpoints
   const handleAddStudentToCourse = (studentId: number, courseId: number) => {
-    const course = courses.find(c => c.id === courseId);
-    const student = students.find(s => s.id === studentId);
-    if (!course || !student) return;
-
-    // Only allow adding students to live courses
-    if (course.status !== 'live') {
-      alert('Students can only be enrolled in live courses.');
-      return;
-    }
-
-    // Check if student is already enrolled in this course (any version)
-    const isAlreadyEnrolled = student.enrolledCourses.some(enrollment => 
-      enrollment.baseId === (course.baseId || course.id)
-    );
-
-    if (isAlreadyEnrolled) {
-      alert('Student is already enrolled in this course.');
-      return;
-    }
-
-    const enrollment: StudentCourseEnrollment = {
-      courseId: course.id,
-      courseVersion: course.version,
-      enrolledAt: new Date().toISOString(),
-      baseId: course.baseId || course.id
-    };
-
-    setStudents(students.map(s => 
-      s.id === studentId 
-        ? { ...s, enrolledCourses: [...s.enrolledCourses, enrollment] }
-        : s
-    ));
-    
-    setCourses(courses.map(c => 
-      c.id === courseId 
-        ? { ...c, enrolledStudents: c.enrolledStudents + 1 }
-        : c
-    ));
+    // This would require additional Supabase operations
+    console.log('Add student to course:', studentId, courseId);
+    alert('Student enrollment management coming soon!');
   };
 
   const handleRemoveStudentFromCourse = (studentId: number, courseId: number) => {
-    const student = students.find(s => s.id === studentId);
-    const course = courses.find(c => c.id === courseId);
-    if (!student || !course) return;
-
-    if (confirm('Are you sure you want to remove this student from the course? Their progress will be preserved.')) {
-      // Find the enrollment to remove
-      const enrollmentToRemove = student.enrolledCourses.find(enrollment => 
-        enrollment.baseId === (course.baseId || course.id)
-      );
-
-      if (enrollmentToRemove) {
-        setStudents(students.map(s => 
-          s.id === studentId 
-            ? { 
-                ...s, 
-                enrolledCourses: s.enrolledCourses.filter(enrollment => 
-                  enrollment.baseId !== (course.baseId || course.id)
-                )
-              }
-            : s
-        ));
-        
-        // Find the actual course the student was enrolled in and update its count
-        const enrolledCourse = courses.find(c => c.id === enrollmentToRemove.courseId);
-        if (enrolledCourse) {
-          setCourses(courses.map(c => 
-            c.id === enrolledCourse.id 
-              ? { ...c, enrolledStudents: Math.max(0, c.enrolledStudents - 1) }
-              : c
-          ));
-        }
-      }
-    }
+    // This would require additional Supabase operations
+    console.log('Remove student from course:', studentId, courseId);
+    alert('Student enrollment management coming soon!');
   };
 
   const renderActiveTab = () => {
