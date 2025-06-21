@@ -23,6 +23,9 @@ const transformStudent = (row: any): Student => ({
   id: row.id,
   name: row.name,
   email: row.email || '',
+  phone: row.phone_number,
+  telegram_id: row.telegram_id,
+  about: row.about,
   avatar: undefined, // Not in database
   status: 'new', // Not in database - default
   enrolledCourses: [], // Not in database - default
@@ -94,27 +97,27 @@ export const useSupabase = () => {
     }
   };
 
-  // Authentication function
-  const authenticateCoach = async (email: string, password: string) => {
+  // Authentication function - updated to use name, email, and phone
+  const authenticateCoach = async (name: string, email: string, phone?: string) => {
     try {
-      // Check if coach exists in coaches table
+      // Check if coach exists in coaches table with matching credentials
       const { data: coach, error } = await supabase
         .from('coaches')
         .select('*')
+        .eq('name', name)
         .eq('email', email)
         .single();
 
       if (error || !coach) {
-        throw new Error('Invalid credentials');
+        throw new Error('Invalid credentials - coach not found');
       }
 
-      // For now, we'll use a simple password check
-      // In production, you'd want proper password hashing
-      if (password === 'coach123') { // Default password for demo
-        return coach;
-      } else {
-        throw new Error('Invalid credentials');
+      // If phone is provided, verify it matches (allowing for null/empty phone in database)
+      if (phone && coach.phone && coach.phone !== phone) {
+        throw new Error('Invalid credentials - phone number mismatch');
       }
+
+      return coach;
     } catch (err) {
       console.error('Authentication error:', err);
       throw err;
@@ -215,9 +218,9 @@ export const useSupabase = () => {
         .from('students')
         .insert({
           name: studentData.name!,
-          telegram_id: null,
-          phone_number: null,
-          about: null,
+          telegram_id: studentData.telegram_id || null,
+          phone_number: studentData.phone || null,
+          about: studentData.about || null,
           email: studentData.email || null
         })
         .select()
