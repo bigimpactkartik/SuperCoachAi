@@ -2,21 +2,21 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Course, Student, SuperCoach, Conversation } from '../types';
 
-// Transform database row to application type
+// Transform database row to application type with minimal defaults
 const transformCourse = (row: any): Course => ({
   id: row.id,
   title: row.title,
-  description: '', // Default since not in database
-  status: 'draft', // Default since not in database
-  version: 1, // Default since not in database
-  modules: [], // Default since not in database
-  createdAt: new Date().toISOString(), // Default since not in database
-  updatedAt: new Date().toISOString(), // Default since not in database
-  enrolledStudents: 0, // Default since not in database
-  completionRate: 0, // Default since not in database
+  description: '', // Not in database - default
+  status: 'draft', // Not in database - default
+  version: 1, // Not in database - default
+  modules: [], // Not in database - default
+  createdAt: new Date().toISOString(), // Not in database - default
+  updatedAt: new Date().toISOString(), // Not in database - default
+  enrolledStudents: 0, // Not in database - default
+  completionRate: 0, // Not in database - default
   superCoachId: row.coach_id,
-  baseId: row.id, // Use id as baseId
-  isCurrentVersion: true // Default since not in database
+  baseId: row.id,
+  isCurrentVersion: true // Not in database - default
 });
 
 const transformStudent = (row: any): Student => ({
@@ -24,30 +24,30 @@ const transformStudent = (row: any): Student => ({
   name: row.name,
   email: row.email || '',
   avatar: undefined, // Not in database
-  status: 'new', // Default since not in database
-  enrolledCourses: [], // Default since not in database
-  progress: [], // Default since not in database
-  joinedAt: new Date().toISOString(), // Default since not in database
-  lastActivity: 'Recently active' // Default since not in database
+  status: 'new', // Not in database - default
+  enrolledCourses: [], // Not in database - default
+  progress: [], // Not in database - default
+  joinedAt: new Date().toISOString(), // Not in database - default
+  lastActivity: 'Recently active' // Not in database - default
 });
 
 const transformSuperCoach = (row: any): SuperCoach => ({
   id: row.id,
   name: row.name,
-  personalityType: 'friendly', // Default since not in database
-  description: '', // Default since not in database
-  avatar: '', // Default since not in database
-  coursesAssigned: [], // Default since not in database
-  createdAt: new Date().toISOString(), // Default since not in database
-  isActive: true // Default since not in database
+  personalityType: 'friendly', // Not in database - default
+  description: '', // Not in database - default
+  avatar: '', // Not in database - default
+  coursesAssigned: [], // Not in database - default
+  createdAt: new Date().toISOString(), // Not in database - default
+  isActive: true // Not in database - default
 });
 
 const transformConversation = (row: any): Conversation => ({
   id: row.id,
   studentId: row.student_id,
-  superCoachId: 1, // Default coach ID since not in database
-  courseId: 1, // Default course ID since not in database
-  courseVersion: 1, // Default version since not in database
+  superCoachId: 1, // Not in database - default
+  courseId: 1, // Not in database - default
+  courseVersion: 1, // Not in database - default
   messages: [{
     id: row.id,
     senderId: row.student_id,
@@ -98,7 +98,7 @@ export const useSupabase = () => {
     }
   };
 
-  // Course operations
+  // Course operations (only using fields that exist)
   const createCourse = async (courseData: Partial<Course>) => {
     try {
       const { data, error } = await supabase
@@ -172,7 +172,7 @@ export const useSupabase = () => {
 
   const makeCourseeLive = async (courseId: number) => {
     try {
-      // Since status is not in the database, we'll just update the course
+      // Since status is not in the database, we'll just update locally
       const course = courses.find(c => c.id === courseId);
       if (!course) throw new Error('Course not found');
       
@@ -185,17 +185,17 @@ export const useSupabase = () => {
     }
   };
 
-  // Student operations
+  // Student operations (only using fields that exist)
   const createStudent = async (studentData: Partial<Student>, courseId?: number) => {
     try {
       const { data, error } = await supabase
         .from('students')
         .insert({
           name: studentData.name!,
-          email: studentData.email!,
           telegram_id: null,
           phone_number: null,
-          about: null
+          about: null,
+          email: studentData.email!
         })
         .select()
         .single();
@@ -222,7 +222,7 @@ export const useSupabase = () => {
     }
   };
 
-  // SuperCoach operations (using coaches table)
+  // SuperCoach operations (using coaches table with only existing fields)
   const createSuperCoach = async (superCoachData: Partial<SuperCoach>) => {
     try {
       const { data, error } = await supabase
