@@ -13,7 +13,7 @@ export interface Database {
           updated_at: string;
           enrolled_students: number;
           completion_rate: number;
-          super_coach_id: number | null;
+          coach_id: number | null;
           base_id: number | null;
           is_current_version: boolean;
         };
@@ -28,7 +28,7 @@ export interface Database {
           updated_at?: string;
           enrolled_students?: number;
           completion_rate?: number;
-          super_coach_id?: number | null;
+          coach_id?: number | null;
           base_id?: number | null;
           is_current_version?: boolean;
         };
@@ -43,7 +43,7 @@ export interface Database {
           updated_at?: string;
           enrolled_students?: number;
           completion_rate?: number;
-          super_coach_id?: number | null;
+          coach_id?: number | null;
           base_id?: number | null;
           is_current_version?: boolean;
         };
@@ -52,7 +52,10 @@ export interface Database {
         Row: {
           id: number;
           name: string;
-          email: string;
+          telegram_id: string | null;
+          phone_number: string | null;
+          about: string | null;
+          email: string | null;
           avatar: string | null;
           status: 'new' | 'in-progress' | 'stuck' | 'completed';
           enrolled_courses: any; // JSON field
@@ -63,7 +66,10 @@ export interface Database {
         Insert: {
           id?: number;
           name: string;
-          email: string;
+          telegram_id?: string | null;
+          phone_number?: string | null;
+          about?: string | null;
+          email?: string | null;
           avatar?: string | null;
           status?: 'new' | 'in-progress' | 'stuck' | 'completed';
           enrolled_courses?: any;
@@ -74,7 +80,10 @@ export interface Database {
         Update: {
           id?: number;
           name?: string;
-          email?: string;
+          telegram_id?: string | null;
+          phone_number?: string | null;
+          about?: string | null;
+          email?: string | null;
           avatar?: string | null;
           status?: 'new' | 'in-progress' | 'stuck' | 'completed';
           enrolled_courses?: any;
@@ -83,7 +92,7 @@ export interface Database {
           last_activity?: string;
         };
       };
-      super_coaches: {
+      coaches: {
         Row: {
           id: number;
           name: string;
@@ -119,32 +128,23 @@ export interface Database {
         Row: {
           id: number;
           student_id: number;
-          super_coach_id: number;
-          course_id: number;
-          course_version: number;
-          messages: any; // JSON field
-          started_at: string;
-          last_message_at: string;
+          role: string;
+          message: string;
+          timestamp: string;
         };
         Insert: {
           id?: number;
           student_id: number;
-          super_coach_id: number;
-          course_id: number;
-          course_version: number;
-          messages?: any;
-          started_at?: string;
-          last_message_at?: string;
+          role: string;
+          message: string;
+          timestamp?: string;
         };
         Update: {
           id?: number;
           student_id?: number;
-          super_coach_id?: number;
-          course_id?: number;
-          course_version?: number;
-          messages?: any;
-          started_at?: string;
-          last_message_at?: string;
+          role?: string;
+          message?: string;
+          timestamp?: string;
         };
       };
     };

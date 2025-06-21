@@ -14,7 +14,7 @@ const transformCourse = (row: any): Course => ({
   updatedAt: row.updated_at,
   enrolledStudents: row.enrolled_students,
   completionRate: row.completion_rate,
-  superCoachId: row.super_coach_id,
+  superCoachId: row.coach_id, // Changed from super_coach_id to coach_id
   baseId: row.base_id,
   isCurrentVersion: row.is_current_version
 });
@@ -22,7 +22,7 @@ const transformCourse = (row: any): Course => ({
 const transformStudent = (row: any): Student => ({
   id: row.id,
   name: row.name,
-  email: row.email,
+  email: row.email || '',
   avatar: row.avatar,
   status: row.status,
   enrolledCourses: row.enrolled_courses || [],
@@ -45,12 +45,19 @@ const transformSuperCoach = (row: any): SuperCoach => ({
 const transformConversation = (row: any): Conversation => ({
   id: row.id,
   studentId: row.student_id,
-  superCoachId: row.super_coach_id,
-  courseId: row.course_id,
-  courseVersion: row.course_version,
-  messages: row.messages || [],
-  startedAt: row.started_at,
-  lastMessageAt: row.last_message_at
+  superCoachId: 1, // Default coach ID since conversations table doesn't have coach_id
+  courseId: 1, // Default course ID
+  courseVersion: 1, // Default version
+  messages: [{
+    id: row.id,
+    senderId: row.student_id,
+    senderType: row.role === 'user' ? 'student' : 'supercoach',
+    content: row.message,
+    timestamp: row.timestamp,
+    type: 'text'
+  }],
+  startedAt: row.timestamp,
+  lastMessageAt: row.timestamp
 });
 
 export const useSupabase = () => {
@@ -67,21 +74,21 @@ export const useSupabase = () => {
       setLoading(true);
       setError(null);
 
-      const [coursesRes, studentsRes, superCoachesRes, conversationsRes] = await Promise.all([
+      const [coursesRes, studentsRes, coachesRes, conversationsRes] = await Promise.all([
         supabase.from('courses').select('*').order('created_at', { ascending: false }),
         supabase.from('students').select('*').order('joined_at', { ascending: false }),
-        supabase.from('super_coaches').select('*').order('created_at', { ascending: false }),
-        supabase.from('conversations').select('*').order('last_message_at', { ascending: false })
+        supabase.from('coaches').select('*').order('created_at', { ascending: false }), // Changed from super_coaches to coaches
+        supabase.from('conversations').select('*').order('timestamp', { ascending: false })
       ]);
 
       if (coursesRes.error) throw coursesRes.error;
       if (studentsRes.error) throw studentsRes.error;
-      if (superCoachesRes.error) throw superCoachesRes.error;
+      if (coachesRes.error) throw coachesRes.error;
       if (conversationsRes.error) throw conversationsRes.error;
 
       setCourses(coursesRes.data.map(transformCourse));
       setStudents(studentsRes.data.map(transformStudent));
-      setSuperCoaches(superCoachesRes.data.map(transformSuperCoach));
+      setSuperCoaches(coachesRes.data.map(transformSuperCoach)); // Still using superCoaches state variable
       setConversations(conversationsRes.data.map(transformConversation));
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -256,11 +263,11 @@ export const useSupabase = () => {
     }
   };
 
-  // SuperCoach operations
+  // SuperCoach operations (using coaches table)
   const createSuperCoach = async (superCoachData: Partial<SuperCoach>) => {
     try {
       const { data, error } = await supabase
-        .from('super_coaches')
+        .from('coaches') // Changed from super_coaches to coaches
         .insert({
           name: superCoachData.name!,
           personality_type: superCoachData.personalityType!,
@@ -284,7 +291,7 @@ export const useSupabase = () => {
   const updateSuperCoach = async (superCoachId: number, superCoachData: Partial<SuperCoach>) => {
     try {
       const { data, error } = await supabase
-        .from('super_coaches')
+        .from('coaches') // Changed from super_coaches to coaches
         .update({
           name: superCoachData.name,
           personality_type: superCoachData.personalityType,
@@ -309,7 +316,7 @@ export const useSupabase = () => {
   const deleteSuperCoach = async (superCoachId: number) => {
     try {
       const { error } = await supabase
-        .from('super_coaches')
+        .from('coaches') // Changed from super_coaches to coaches
         .delete()
         .eq('id', superCoachId);
 
