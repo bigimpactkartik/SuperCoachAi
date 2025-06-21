@@ -19,17 +19,6 @@ const ConversationModal: React.FC<ConversationModalProps> = ({
     return new Date(timestamp).toLocaleString();
   };
 
-  const getPersonalityColor = (type?: string) => {
-    switch (type) {
-      case 'friendly': return 'from-emerald-500 to-teal-600';
-      case 'professional': return 'from-blue-500 to-indigo-600';
-      case 'motivational': return 'from-orange-500 to-red-500';
-      case 'supportive': return 'from-purple-500 to-violet-600';
-      case 'direct': return 'from-gray-500 to-slate-600';
-      default: return 'from-blue-500 to-indigo-600';
-    }
-  };
-
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
       <div className="glass rounded-2xl p-8 w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden transform animate-slideUp shadow-2xl border border-white/20">
@@ -48,12 +37,8 @@ const ConversationModal: React.FC<ConversationModalProps> = ({
               <span className="text-gray-400">↔</span>
               
               {/* SuperCoach Avatar */}
-              <div className={`w-12 h-12 bg-gradient-to-br ${getPersonalityColor(superCoach?.personalityType)} rounded-xl flex items-center justify-center text-white`}>
-                {superCoach?.avatar ? (
-                  <img src={superCoach.avatar} alt={superCoach.name} className="w-full h-full rounded-xl object-cover" />
-                ) : (
-                  <Bot size={20} />
-                )}
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center text-white">
+                <Bot size={20} />
               </div>
             </div>
             
@@ -96,7 +81,7 @@ const ConversationModal: React.FC<ConversationModalProps> = ({
                   <div className={`p-3 rounded-2xl ${
                     isStudent 
                       ? 'bg-blue-100 text-blue-900' 
-                      : `bg-gradient-to-r ${getPersonalityColor(superCoach?.personalityType)} text-white`
+                      : 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
                   }`}>
                     <p className="text-sm">{message.content}</p>
                   </div>
@@ -107,12 +92,8 @@ const ConversationModal: React.FC<ConversationModalProps> = ({
                 </div>
                 
                 {!isStudent && (
-                  <div className={`w-8 h-8 bg-gradient-to-br ${getPersonalityColor(superCoach?.personalityType)} rounded-lg flex items-center justify-center text-white flex-shrink-0`}>
-                    {superCoach?.avatar ? (
-                      <img src={superCoach.avatar} alt={superCoach.name} className="w-full h-full rounded-lg object-cover" />
-                    ) : (
-                      <Bot size={16} />
-                    )}
+                  <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                    <Bot size={16} />
                   </div>
                 )}
               </div>
@@ -141,7 +122,7 @@ const ConversationModal: React.FC<ConversationModalProps> = ({
           </div>
 
           <div className="glass-dark rounded-xl p-4 text-center">
-            <div className={`w-10 h-10 bg-gradient-to-br ${getPersonalityColor(superCoach?.personalityType)} rounded-lg flex items-center justify-center mx-auto mb-2`}>
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center mx-auto mb-2">
               <Bot className="text-white" size={16} />
             </div>
             <div className="text-lg font-bold text-orange-600">

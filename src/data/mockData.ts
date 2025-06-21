@@ -317,47 +317,31 @@ export const mockStudents: Student[] = [
   }
 ];
 
-// Mock SuperCoaches
+// Mock SuperCoaches - simplified to match database schema
 export const mockSuperCoaches: SuperCoach[] = [
   {
     id: 1,
     name: "Coach Maya",
-    personalityType: "friendly",
-    description: "A warm and encouraging coach who specializes in digital marketing. Maya helps students overcome challenges with patience and positivity.",
-    avatar: "",
-    coursesAssigned: [1, 4], // Assigned to both versions of Digital Marketing
-    createdAt: "2024-01-10T08:00:00Z",
-    isActive: true
+    email: "coach.maya@supercoach.ai",
+    phone: "+1 (555) 123-4567"
   },
   {
     id: 2,
     name: "Coach Alexander",
-    personalityType: "professional",
-    description: "A structured and results-oriented coach focused on leadership development. Alexander provides clear guidance and actionable feedback.",
-    avatar: "",
-    coursesAssigned: [2],
-    createdAt: "2024-01-15T10:00:00Z",
-    isActive: true
+    email: "coach.alexander@supercoach.ai",
+    phone: "+1 (555) 234-5678"
   },
   {
     id: 3,
     name: "Coach Zara",
-    personalityType: "motivational",
-    description: "An energetic and inspiring coach who helps students push through barriers and achieve their goals with enthusiasm.",
-    avatar: "",
-    coursesAssigned: [],
-    createdAt: "2024-02-01T12:00:00Z",
-    isActive: true
+    email: "coach.zara@supercoach.ai",
+    phone: null
   },
   {
     id: 4,
     name: "Coach Sam",
-    personalityType: "supportive",
-    description: "A patient and understanding coach who provides emotional support and helps students build confidence in their learning journey.",
-    avatar: "",
-    coursesAssigned: [],
-    createdAt: "2024-02-10T14:30:00Z",
-    isActive: false
+    email: "coach.sam@supercoach.ai",
+    phone: "+1 (555) 345-6789"
   }
 ];
 

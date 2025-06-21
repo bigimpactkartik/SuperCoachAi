@@ -17,17 +17,6 @@ const SuperCoachesTab: React.FC<SuperCoachesTabProps> = ({
   onEditSuperCoach, 
   onDeleteSuperCoach 
 }) => {
-  const getPersonalityColor = (type: string) => {
-    switch (type) {
-      case 'friendly': return 'from-emerald-500 to-teal-600';
-      case 'professional': return 'from-blue-500 to-indigo-600';
-      case 'motivational': return 'from-orange-500 to-red-500';
-      case 'supportive': return 'from-purple-500 to-violet-600';
-      case 'direct': return 'from-gray-500 to-slate-600';
-      default: return 'from-blue-500 to-indigo-600';
-    }
-  };
-
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Header Section */}
@@ -74,7 +63,7 @@ const SuperCoachesTab: React.FC<SuperCoachesTabProps> = ({
         <div className="glass rounded-xl p-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">{superCoaches.filter(sc => sc.isActive).length}</span>
+              <span className="text-white font-bold text-lg">{superCoaches.length}</span>
             </div>
             <div>
               <p className="text-2xl font-bold text-emerald-600">Active</p>
@@ -89,7 +78,7 @@ const SuperCoachesTab: React.FC<SuperCoachesTabProps> = ({
               <Users className="text-white" size={20} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-blue-600">{superCoaches.reduce((acc, sc) => acc + sc.coursesAssigned.length, 0)}</p>
+              <p className="text-2xl font-bold text-blue-600">{courses.filter(c => c.superCoachId).length}</p>
               <p className="text-sm font-medium text-gray-600">Course Assignments</p>
             </div>
           </div>
@@ -113,67 +102,55 @@ const SuperCoachesTab: React.FC<SuperCoachesTabProps> = ({
         {superCoaches.map(superCoach => (
           <div key={superCoach.id} className="glass rounded-2xl p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 group relative overflow-hidden">
             {/* Background Pattern */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${getPersonalityColor(superCoach.personalityType)} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-500 opacity-0 group-hover:opacity-5 transition-opacity duration-300"></div>
             
             <div className="relative z-10">
               {/* Header */}
               <div className="flex items-center gap-4 mb-4">
-                <div className={`w-16 h-16 bg-gradient-to-br ${getPersonalityColor(superCoach.personalityType)} rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                  {superCoach.avatar ? (
-                    <img src={superCoach.avatar} alt={superCoach.name} className="w-full h-full rounded-2xl object-cover" />
-                  ) : (
-                    <Bot size={24} />
-                  )}
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Bot size={24} />
                 </div>
                 
                 <div className="flex-1">
                   <h3 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors duration-300">
                     {superCoach.name}
                   </h3>
-                  <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r ${getPersonalityColor(superCoach.personalityType)}`}>
-                    <span className="capitalize">{superCoach.personalityType}</span>
-                  </div>
+                  <p className="text-sm text-gray-600">{superCoach.email}</p>
+                  {superCoach.phone && (
+                    <p className="text-xs text-gray-500">{superCoach.phone}</p>
+                  )}
                 </div>
                 
-                <div className={`w-3 h-3 rounded-full ${superCoach.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
               </div>
-
-              {/* Description */}
-              <p className="text-gray-600 text-sm mb-4 line-clamp-3">{superCoach.description}</p>
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="text-center p-3 bg-white/60 backdrop-blur-sm rounded-xl">
-                  <div className="text-lg font-bold text-blue-600">{superCoach.coursesAssigned.length}</div>
+                  <div className="text-lg font-bold text-blue-600">{courses.filter(c => c.superCoachId === superCoach.id).length}</div>
                   <div className="text-xs text-gray-600">Courses</div>
                 </div>
                 <div className="text-center p-3 bg-white/60 backdrop-blur-sm rounded-xl">
                   <div className="text-lg font-bold text-emerald-600">
-                    {superCoach.coursesAssigned.reduce((acc, courseId) => {
-                      const course = courses.find(c => c.id === courseId);
-                      return acc + (course?.enrolledStudents || 0);
-                    }, 0)}
+                    {courses.filter(c => c.superCoachId === superCoach.id).reduce((acc, course) => acc + course.enrolledStudents, 0)}
                   </div>
                   <div className="text-xs text-gray-600">Students</div>
                 </div>
               </div>
 
               {/* Assigned Courses */}
-              {superCoach.coursesAssigned.length > 0 && (
+              {courses.filter(c => c.superCoachId === superCoach.id).length > 0 && (
                 <div className="mb-4">
                   <p className="text-xs font-semibold text-gray-600 mb-2">Assigned Courses</p>
                   <div className="flex flex-wrap gap-1">
-                    {superCoach.coursesAssigned.slice(0, 2).map(courseId => {
-                      const course = courses.find(c => c.id === courseId);
-                      return course ? (
-                        <span key={courseId} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                          {course.title}
-                        </span>
-                      ) : null;
-                    })}
-                    {superCoach.coursesAssigned.length > 2 && (
+                    {courses.filter(c => c.superCoachId === superCoach.id).slice(0, 2).map(course => (
+                      <span key={course.id} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                        {course.title}
+                      </span>
+                    ))}
+                    {courses.filter(c => c.superCoachId === superCoach.id).length > 2 && (
                       <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                        +{superCoach.coursesAssigned.length - 2} more
+                        +{courses.filter(c => c.superCoachId === superCoach.id).length - 2} more
                       </span>
                     )}
                   </div>
@@ -184,7 +161,7 @@ const SuperCoachesTab: React.FC<SuperCoachesTabProps> = ({
               <div className="flex gap-2">
                 <button 
                   onClick={() => onEditSuperCoach(superCoach)}
-                  className={`flex-1 bg-gradient-to-r ${getPersonalityColor(superCoach.personalityType)} text-white px-4 py-2 rounded-xl hover:opacity-90 transition-all duration-200 text-sm font-semibold transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2`}
+                  className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-xl hover:opacity-90 transition-all duration-200 text-sm font-semibold transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                 >
                   <Edit size={14} />
                   Edit

@@ -10,33 +10,13 @@ interface CreateSuperCoachModalProps {
 const CreateSuperCoachModal: React.FC<CreateSuperCoachModalProps> = ({ onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
     name: '',
-    personalityType: 'friendly' as SuperCoach['personalityType'],
-    description: '',
-    avatar: ''
+    email: '',
+    phone: ''
   });
-
-  const personalityTypes = [
-    { value: 'friendly', label: 'Friendly', description: 'Warm, approachable, and encouraging' },
-    { value: 'professional', label: 'Professional', description: 'Formal, structured, and business-focused' },
-    { value: 'motivational', label: 'Motivational', description: 'Energetic, inspiring, and goal-oriented' },
-    { value: 'supportive', label: 'Supportive', description: 'Empathetic, patient, and understanding' },
-    { value: 'direct', label: 'Direct', description: 'Straightforward, concise, and results-driven' }
-  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
-  };
-
-  const getPersonalityColor = (type: string) => {
-    switch (type) {
-      case 'friendly': return 'from-emerald-500 to-teal-600';
-      case 'professional': return 'from-blue-500 to-indigo-600';
-      case 'motivational': return 'from-orange-500 to-red-500';
-      case 'supportive': return 'from-purple-500 to-violet-600';
-      case 'direct': return 'from-gray-500 to-slate-600';
-      default: return 'from-blue-500 to-indigo-600';
-    }
   };
 
   return (
@@ -58,76 +38,39 @@ const CreateSuperCoachModal: React.FC<CreateSuperCoachModalProps> = ({ onClose, 
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Coach Name</label>
-              <input 
-                type="text" 
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 bg-white/80 backdrop-blur-sm" 
-                placeholder="e.g., Coach Alex"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Avatar URL (Optional)</label>
-              <input 
-                type="url" 
-                value={formData.avatar}
-                onChange={(e) => setFormData({...formData, avatar: e.target.value})}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 bg-white/80 backdrop-blur-sm" 
-                placeholder="https://example.com/avatar.jpg"
-              />
-            </div>
-          </div>
-          
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
-            <textarea 
-              value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 h-24 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 bg-white/80 backdrop-blur-sm resize-none"
-              placeholder="Describe the coach's role and expertise..."
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Coach Name</label>
+            <input 
+              type="text" 
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 bg-white/80 backdrop-blur-sm" 
+              placeholder="e.g., Coach Alex"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">Personality Type</label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {personalityTypes.map((type) => (
-                <label
-                  key={type.value}
-                  className={`relative flex items-start p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-                    formData.personalityType === type.value
-                      ? `border-transparent bg-gradient-to-r ${getPersonalityColor(type.value)} text-white`
-                      : 'border-gray-200 hover:border-gray-300 bg-white/60'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="personalityType"
-                    value={type.value}
-                    checked={formData.personalityType === type.value}
-                    onChange={(e) => setFormData({...formData, personalityType: e.target.value as SuperCoach['personalityType']})}
-                    className="sr-only"
-                  />
-                  <div className="flex-1">
-                    <div className="font-semibold mb-1">{type.label}</div>
-                    <div className={`text-sm ${formData.personalityType === type.value ? 'text-white/90' : 'text-gray-600'}`}>
-                      {type.description}
-                    </div>
-                  </div>
-                  {formData.personalityType === type.value && (
-                    <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-current rounded-full"></div>
-                    </div>
-                  )}
-                </label>
-              ))}
-            </div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+            <input 
+              type="email" 
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 bg-white/80 backdrop-blur-sm" 
+              placeholder="coach@example.com"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Phone (Optional)</label>
+            <input 
+              type="tel" 
+              value={formData.phone}
+              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 bg-white/80 backdrop-blur-sm" 
+              placeholder="+1 (555) 123-4567"
+            />
           </div>
           
           <div className="flex gap-4 mt-8">

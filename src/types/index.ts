@@ -63,12 +63,8 @@ export interface StudentProgress {
 export interface SuperCoach {
   id: number;
   name: string;
-  personalityType: 'friendly' | 'professional' | 'motivational' | 'supportive' | 'direct';
-  description: string;
-  avatar: string;
-  coursesAssigned: number[];
-  createdAt: string;
-  isActive: boolean;
+  email: string;
+  phone: string | null;
 }
 
 export interface Conversation {

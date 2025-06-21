@@ -34,12 +34,8 @@ const transformStudent = (row: any): Student => ({
 const transformSuperCoach = (row: any): SuperCoach => ({
   id: row.id,
   name: row.name,
-  personalityType: 'friendly', // Not in database - default
-  description: '', // Not in database - default
-  avatar: '', // Not in database - default
-  coursesAssigned: [], // Not in database - default
-  createdAt: new Date().toISOString(), // Not in database - default
-  isActive: true // Not in database - default
+  email: row.email,
+  phone: row.phone
 });
 
 const transformConversation = (row: any): Conversation => ({
@@ -230,8 +226,8 @@ export const useSupabase = () => {
         .from('coaches')
         .insert({
           name: superCoachData.name!,
-          email: `${superCoachData.name?.toLowerCase().replace(/\s+/g, '.')}@supercoach.ai`,
-          phone: null
+          email: superCoachData.email || `${superCoachData.name?.toLowerCase().replace(/\s+/g, '.')}@supercoach.ai`,
+          phone: superCoachData.phone || null
         })
         .select()
         .single();
@@ -253,8 +249,8 @@ export const useSupabase = () => {
         .from('coaches')
         .update({
           name: superCoachData.name,
-          email: superCoachData.name ? `${superCoachData.name.toLowerCase().replace(/\s+/g, '.')}@supercoach.ai` : undefined,
-          phone: null
+          email: superCoachData.email,
+          phone: superCoachData.phone || null
         })
         .eq('id', superCoachId)
         .select()
