@@ -6,48 +6,48 @@ import { Course, Student, SuperCoach, Conversation } from '../types';
 const transformCourse = (row: any): Course => ({
   id: row.id,
   title: row.title,
-  description: row.description,
-  status: row.status,
-  version: row.version,
-  modules: row.modules || [],
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-  enrolledStudents: row.enrolled_students,
-  completionRate: row.completion_rate,
-  superCoachId: row.coach_id, // Changed from super_coach_id to coach_id
-  baseId: row.base_id,
-  isCurrentVersion: row.is_current_version
+  description: '', // Default since not in database
+  status: 'draft', // Default since not in database
+  version: 1, // Default since not in database
+  modules: [], // Default since not in database
+  createdAt: new Date().toISOString(), // Default since not in database
+  updatedAt: new Date().toISOString(), // Default since not in database
+  enrolledStudents: 0, // Default since not in database
+  completionRate: 0, // Default since not in database
+  superCoachId: row.coach_id,
+  baseId: row.id, // Use id as baseId
+  isCurrentVersion: true // Default since not in database
 });
 
 const transformStudent = (row: any): Student => ({
   id: row.id,
   name: row.name,
   email: row.email || '',
-  avatar: row.avatar,
-  status: row.status,
-  enrolledCourses: row.enrolled_courses || [],
-  progress: row.progress || [],
-  joinedAt: row.joined_at,
-  lastActivity: row.last_activity
+  avatar: undefined, // Not in database
+  status: 'new', // Default since not in database
+  enrolledCourses: [], // Default since not in database
+  progress: [], // Default since not in database
+  joinedAt: new Date().toISOString(), // Default since not in database
+  lastActivity: 'Recently active' // Default since not in database
 });
 
 const transformSuperCoach = (row: any): SuperCoach => ({
   id: row.id,
   name: row.name,
-  personalityType: row.personality_type,
-  description: row.description,
-  avatar: row.avatar || '',
-  coursesAssigned: row.courses_assigned || [],
-  createdAt: row.created_at,
-  isActive: row.is_active
+  personalityType: 'friendly', // Default since not in database
+  description: '', // Default since not in database
+  avatar: '', // Default since not in database
+  coursesAssigned: [], // Default since not in database
+  createdAt: new Date().toISOString(), // Default since not in database
+  isActive: true // Default since not in database
 });
 
 const transformConversation = (row: any): Conversation => ({
   id: row.id,
   studentId: row.student_id,
-  superCoachId: 1, // Default coach ID since conversations table doesn't have coach_id
-  courseId: 1, // Default course ID
-  courseVersion: 1, // Default version
+  superCoachId: 1, // Default coach ID since not in database
+  courseId: 1, // Default course ID since not in database
+  courseVersion: 1, // Default version since not in database
   messages: [{
     id: row.id,
     senderId: row.student_id,
@@ -75,9 +75,9 @@ export const useSupabase = () => {
       setError(null);
 
       const [coursesRes, studentsRes, coachesRes, conversationsRes] = await Promise.all([
-        supabase.from('courses').select('*').order('created_at', { ascending: false }),
-        supabase.from('students').select('*').order('joined_at', { ascending: false }),
-        supabase.from('coaches').select('*').order('created_at', { ascending: false }), // Changed from super_coaches to coaches
+        supabase.from('courses').select('*').order('id', { ascending: false }),
+        supabase.from('students').select('*').order('id', { ascending: false }),
+        supabase.from('coaches').select('*').order('id', { ascending: false }),
         supabase.from('conversations').select('*').order('timestamp', { ascending: false })
       ]);
 
@@ -88,7 +88,7 @@ export const useSupabase = () => {
 
       setCourses(coursesRes.data.map(transformCourse));
       setStudents(studentsRes.data.map(transformStudent));
-      setSuperCoaches(coachesRes.data.map(transformSuperCoach)); // Still using superCoaches state variable
+      setSuperCoaches(coachesRes.data.map(transformSuperCoach));
       setConversations(conversationsRes.data.map(transformConversation));
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -105,9 +105,7 @@ export const useSupabase = () => {
         .from('courses')
         .insert({
           title: courseData.title!,
-          description: courseData.description!,
-          modules: courseData.modules || [],
-          base_id: Date.now() // New base ID for new course
+          coach_id: courseData.superCoachId
         })
         .select()
         .single();
@@ -129,10 +127,7 @@ export const useSupabase = () => {
         .from('courses')
         .update({
           title: courseData.title,
-          description: courseData.description,
-          modules: courseData.modules,
-          status: courseData.status,
-          updated_at: new Date().toISOString()
+          coach_id: courseData.superCoachId
         })
         .eq('id', courseId)
         .select()
@@ -154,21 +149,11 @@ export const useSupabase = () => {
       const course = courses.find(c => c.id === courseId);
       if (!course) throw new Error('Course not found');
 
-      // Mark current version as not current
-      await supabase
-        .from('courses')
-        .update({ is_current_version: false })
-        .eq('base_id', course.baseId || course.id);
-
       const { data, error } = await supabase
         .from('courses')
         .insert({
-          title: course.title,
-          description: course.description,
-          modules: course.modules,
-          version: course.version + 1,
-          base_id: course.baseId || course.id,
-          is_current_version: true
+          title: `${course.title} (v${course.version + 1})`,
+          coach_id: course.superCoachId
         })
         .select()
         .single();
@@ -176,11 +161,7 @@ export const useSupabase = () => {
       if (error) throw error;
       
       const newVersion = transformCourse(data);
-      setCourses(prev => prev.map(c => 
-        (c.baseId === course.baseId || c.id === course.baseId) 
-          ? { ...c, isCurrentVersion: false } 
-          : c
-      ).concat(newVersion));
+      setCourses(prev => [...prev, newVersion]);
       
       return newVersion;
     } catch (err) {
@@ -191,16 +172,11 @@ export const useSupabase = () => {
 
   const makeCourseeLive = async (courseId: number) => {
     try {
-      const { data, error } = await supabase
-        .from('courses')
-        .update({ status: 'live' })
-        .eq('id', courseId)
-        .select()
-        .single();
-
-      if (error) throw error;
+      // Since status is not in the database, we'll just update the course
+      const course = courses.find(c => c.id === courseId);
+      if (!course) throw new Error('Course not found');
       
-      const updatedCourse = transformCourse(data);
+      const updatedCourse = { ...course, status: 'live' as const };
       setCourses(prev => prev.map(c => c.id === courseId ? updatedCourse : c));
       return updatedCourse;
     } catch (err) {
@@ -212,27 +188,14 @@ export const useSupabase = () => {
   // Student operations
   const createStudent = async (studentData: Partial<Student>, courseId?: number) => {
     try {
-      let enrolledCourses = studentData.enrolledCourses || [];
-      
-      if (courseId) {
-        const course = courses.find(c => c.id === courseId);
-        if (course) {
-          enrolledCourses = [{
-            courseId: course.id,
-            courseVersion: course.version,
-            enrolledAt: new Date().toISOString(),
-            baseId: course.baseId || course.id
-          }];
-        }
-      }
-
       const { data, error } = await supabase
         .from('students')
         .insert({
           name: studentData.name!,
           email: studentData.email!,
-          enrolled_courses: enrolledCourses,
-          progress: studentData.progress || []
+          telegram_id: null,
+          phone_number: null,
+          about: null
         })
         .select()
         .single();
@@ -242,18 +205,14 @@ export const useSupabase = () => {
       const newStudent = transformStudent(data);
       setStudents(prev => [newStudent, ...prev]);
 
-      // Update course enrollment count if enrolled
+      // If courseId provided, create enrollment
       if (courseId) {
         await supabase
-          .from('courses')
-          .update({ enrolled_students: supabase.raw('enrolled_students + 1') })
-          .eq('id', courseId);
-        
-        setCourses(prev => prev.map(c => 
-          c.id === courseId 
-            ? { ...c, enrolledStudents: c.enrolledStudents + 1 }
-            : c
-        ));
+          .from('enrollments')
+          .insert({
+            student_id: data.id,
+            course_id: courseId
+          });
       }
       
       return newStudent;
@@ -267,12 +226,11 @@ export const useSupabase = () => {
   const createSuperCoach = async (superCoachData: Partial<SuperCoach>) => {
     try {
       const { data, error } = await supabase
-        .from('coaches') // Changed from super_coaches to coaches
+        .from('coaches')
         .insert({
           name: superCoachData.name!,
-          personality_type: superCoachData.personalityType!,
-          description: superCoachData.description!,
-          avatar: superCoachData.avatar || ''
+          email: `${superCoachData.name?.toLowerCase().replace(/\s+/g, '.')}@supercoach.ai`,
+          phone: null
         })
         .select()
         .single();
@@ -291,12 +249,10 @@ export const useSupabase = () => {
   const updateSuperCoach = async (superCoachId: number, superCoachData: Partial<SuperCoach>) => {
     try {
       const { data, error } = await supabase
-        .from('coaches') // Changed from super_coaches to coaches
+        .from('coaches')
         .update({
           name: superCoachData.name,
-          personality_type: superCoachData.personalityType,
-          description: superCoachData.description,
-          avatar: superCoachData.avatar
+          email: superCoachData.name ? `${superCoachData.name.toLowerCase().replace(/\s+/g, '.')}@supercoach.ai` : undefined
         })
         .eq('id', superCoachId)
         .select()
@@ -316,7 +272,7 @@ export const useSupabase = () => {
   const deleteSuperCoach = async (superCoachId: number) => {
     try {
       const { error } = await supabase
-        .from('coaches') // Changed from super_coaches to coaches
+        .from('coaches')
         .delete()
         .eq('id', superCoachId);
 

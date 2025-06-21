@@ -1,127 +1,24 @@
 export interface Database {
   public: {
     Tables: {
-      courses: {
-        Row: {
-          id: number;
-          title: string;
-          description: string;
-          status: 'draft' | 'live' | 'archived';
-          version: number;
-          modules: any; // JSON field
-          created_at: string;
-          updated_at: string;
-          enrolled_students: number;
-          completion_rate: number;
-          coach_id: number | null;
-          base_id: number | null;
-          is_current_version: boolean;
-        };
-        Insert: {
-          id?: number;
-          title: string;
-          description: string;
-          status?: 'draft' | 'live' | 'archived';
-          version?: number;
-          modules?: any;
-          created_at?: string;
-          updated_at?: string;
-          enrolled_students?: number;
-          completion_rate?: number;
-          coach_id?: number | null;
-          base_id?: number | null;
-          is_current_version?: boolean;
-        };
-        Update: {
-          id?: number;
-          title?: string;
-          description?: string;
-          status?: 'draft' | 'live' | 'archived';
-          version?: number;
-          modules?: any;
-          created_at?: string;
-          updated_at?: string;
-          enrolled_students?: number;
-          completion_rate?: number;
-          coach_id?: number | null;
-          base_id?: number | null;
-          is_current_version?: boolean;
-        };
-      };
-      students: {
-        Row: {
-          id: number;
-          name: string;
-          telegram_id: string | null;
-          phone_number: string | null;
-          about: string | null;
-          email: string | null;
-          avatar: string | null;
-          status: 'new' | 'in-progress' | 'stuck' | 'completed';
-          enrolled_courses: any; // JSON field
-          progress: any; // JSON field
-          joined_at: string;
-          last_activity: string;
-        };
-        Insert: {
-          id?: number;
-          name: string;
-          telegram_id?: string | null;
-          phone_number?: string | null;
-          about?: string | null;
-          email?: string | null;
-          avatar?: string | null;
-          status?: 'new' | 'in-progress' | 'stuck' | 'completed';
-          enrolled_courses?: any;
-          progress?: any;
-          joined_at?: string;
-          last_activity?: string;
-        };
-        Update: {
-          id?: number;
-          name?: string;
-          telegram_id?: string | null;
-          phone_number?: string | null;
-          about?: string | null;
-          email?: string | null;
-          avatar?: string | null;
-          status?: 'new' | 'in-progress' | 'stuck' | 'completed';
-          enrolled_courses?: any;
-          progress?: any;
-          joined_at?: string;
-          last_activity?: string;
-        };
-      };
       coaches: {
         Row: {
           id: number;
           name: string;
-          personality_type: 'friendly' | 'professional' | 'motivational' | 'supportive' | 'direct';
-          description: string;
-          avatar: string;
-          courses_assigned: any; // JSON field
-          created_at: string;
-          is_active: boolean;
+          email: string;
+          phone: string | null;
         };
         Insert: {
           id?: number;
           name: string;
-          personality_type: 'friendly' | 'professional' | 'motivational' | 'supportive' | 'direct';
-          description: string;
-          avatar?: string;
-          courses_assigned?: any;
-          created_at?: string;
-          is_active?: boolean;
+          email: string;
+          phone?: string | null;
         };
         Update: {
           id?: number;
           name?: string;
-          personality_type?: 'friendly' | 'professional' | 'motivational' | 'supportive' | 'direct';
-          description?: string;
-          avatar?: string;
-          courses_assigned?: any;
-          created_at?: string;
-          is_active?: boolean;
+          email?: string;
+          phone?: string | null;
         };
       };
       conversations: {
@@ -145,6 +42,190 @@ export interface Database {
           role?: string;
           message?: string;
           timestamp?: string;
+        };
+      };
+      course_versions: {
+        Row: {
+          id: number;
+          course_id: number | null;
+          version_number: number;
+          updated_at: string | null;
+          is_active: boolean | null;
+        };
+        Insert: {
+          id?: number;
+          course_id?: number | null;
+          version_number: number;
+          updated_at?: string | null;
+          is_active?: boolean | null;
+        };
+        Update: {
+          id?: number;
+          course_id?: number | null;
+          version_number?: number;
+          updated_at?: string | null;
+          is_active?: boolean | null;
+        };
+      };
+      courses: {
+        Row: {
+          id: number;
+          title: string;
+          coach_id: number | null;
+        };
+        Insert: {
+          id?: number;
+          title: string;
+          coach_id?: number | null;
+        };
+        Update: {
+          id?: number;
+          title?: string;
+          coach_id?: number | null;
+        };
+      };
+      enrollments: {
+        Row: {
+          id: number;
+          student_id: number | null;
+          course_id: number | null;
+          enrolled_at: string | null;
+        };
+        Insert: {
+          id?: number;
+          student_id?: number | null;
+          course_id?: number | null;
+          enrolled_at?: string | null;
+        };
+        Update: {
+          id?: number;
+          student_id?: number | null;
+          course_id?: number | null;
+          enrolled_at?: string | null;
+        };
+      };
+      modules: {
+        Row: {
+          id: number;
+          course_id: number | null;
+          title: string | null;
+        };
+        Insert: {
+          id?: number;
+          course_id?: number | null;
+          title?: string | null;
+        };
+        Update: {
+          id?: number;
+          course_id?: number | null;
+          title?: string | null;
+        };
+      };
+      promises: {
+        Row: {
+          id: number;
+          student_id: number | null;
+          task_id: number | null;
+          promise_datetime: string | null;
+          due_date: string | null;
+          checked: boolean | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: number;
+          student_id?: number | null;
+          task_id?: number | null;
+          promise_datetime?: string | null;
+          due_date?: string | null;
+          checked?: boolean | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: number;
+          student_id?: number | null;
+          task_id?: number | null;
+          promise_datetime?: string | null;
+          due_date?: string | null;
+          checked?: boolean | null;
+          created_at?: string | null;
+        };
+      };
+      students: {
+        Row: {
+          id: number;
+          name: string;
+          telegram_id: string | null;
+          phone_number: string | null;
+          about: string | null;
+          email: string | null;
+        };
+        Insert: {
+          id?: number;
+          name: string;
+          telegram_id?: string | null;
+          phone_number?: string | null;
+          about?: string | null;
+          email?: string | null;
+        };
+        Update: {
+          id?: number;
+          name?: string;
+          telegram_id?: string | null;
+          phone_number?: string | null;
+          about?: string | null;
+          email?: string | null;
+        };
+      };
+      task_assignments: {
+        Row: {
+          id: number;
+          student_id: number | null;
+          task_id: number | null;
+          status: 'pending' | 'completed' | null;
+          updated_at: string | null;
+          due_date: string;
+        };
+        Insert: {
+          id?: number;
+          student_id?: number | null;
+          task_id?: number | null;
+          status?: 'pending' | 'completed' | null;
+          updated_at?: string | null;
+          due_date: string;
+        };
+        Update: {
+          id?: number;
+          student_id?: number | null;
+          task_id?: number | null;
+          status?: 'pending' | 'completed' | null;
+          updated_at?: string | null;
+          due_date?: string;
+        };
+      };
+      tasks: {
+        Row: {
+          id: number;
+          course_id: number;
+          title: string;
+          deadline: string;
+          module_id: number;
+          timetocomplete: number | null;
+        };
+        Insert: {
+          id?: number;
+          course_id: number;
+          title: string;
+          deadline: string;
+          module_id: number;
+          timetocomplete?: number | null;
+        };
+        Update: {
+          id?: number;
+          course_id?: number;
+          title?: string;
+          deadline?: string;
+          module_id?: number;
+          timetocomplete?: number | null;
         };
       };
     };
