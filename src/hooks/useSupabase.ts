@@ -94,6 +94,33 @@ export const useSupabase = () => {
     }
   };
 
+  // Authentication function
+  const authenticateCoach = async (email: string, password: string) => {
+    try {
+      // Check if coach exists in coaches table
+      const { data: coach, error } = await supabase
+        .from('coaches')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (error || !coach) {
+        throw new Error('Invalid credentials');
+      }
+
+      // For now, we'll use a simple password check
+      // In production, you'd want proper password hashing
+      if (password === 'coach123') { // Default password for demo
+        return coach;
+      } else {
+        throw new Error('Invalid credentials');
+      }
+    } catch (err) {
+      console.error('Authentication error:', err);
+      throw err;
+    }
+  };
+
   // Course operations - ONLY using fields that exist in database
   const createCourse = async (courseData: Partial<Course>) => {
     try {
@@ -219,6 +246,32 @@ export const useSupabase = () => {
     }
   };
 
+  const updateStudent = async (studentId: number, studentData: Partial<Student>) => {
+    try {
+      const { data, error } = await supabase
+        .from('students')
+        .update({
+          name: studentData.name,
+          email: studentData.email,
+          phone_number: studentData.phone || null,
+          telegram_id: studentData.telegram_id || null,
+          about: studentData.about || null
+        })
+        .eq('id', studentId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      const updatedStudent = transformStudent(data);
+      setStudents(prev => prev.map(s => s.id === studentId ? updatedStudent : s));
+      return updatedStudent;
+    } catch (err) {
+      console.error('Error updating student:', err);
+      throw err;
+    }
+  };
+
   // SuperCoach operations - ONLY using fields that exist in coaches table
   const createSuperCoach = async (superCoachData: Partial<SuperCoach>) => {
     try {
@@ -296,11 +349,13 @@ export const useSupabase = () => {
     loading,
     error,
     refetch: fetchData,
+    authenticateCoach,
     createCourse,
     updateCourse,
     createCourseVersion,
     makeCourseeLive,
     createStudent,
+    updateStudent,
     createSuperCoach,
     updateSuperCoach,
     deleteSuperCoach

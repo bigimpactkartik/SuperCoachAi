@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { CheckCircle, AlertCircle, MessageCircle, User, Clock, Trophy, Eye, UserPlus, UserMinus, MoreVertical } from 'lucide-react';
+import { CheckCircle, AlertCircle, MessageCircle, User, Clock, Trophy, Eye, UserPlus, UserMinus, MoreVertical, Edit } from 'lucide-react';
 import { Student, Course } from '../types';
 
 interface StudentRowProps {
   student: Student;
   courses: Course[];
   onViewDetails: () => void;
+  onEditStudent: () => void;
   onAddToCourse: (studentId: number, courseId: number) => void;
   onRemoveFromCourse: (studentId: number, courseId: number) => void;
 }
@@ -14,6 +15,7 @@ const StudentRow: React.FC<StudentRowProps> = ({
   student, 
   courses, 
   onViewDetails, 
+  onEditStudent,
   onAddToCourse, 
   onRemoveFromCourse 
 }) => {
@@ -39,9 +41,9 @@ const StudentRow: React.FC<StudentRowProps> = ({
     }
   };
 
-  const enrolledCourses = courses.filter(course => student.enrolledCourses.includes(course.id));
+  const enrolledCourses = courses.filter(course => student.enrolledCourses.some(enrollment => enrollment.courseId === course.id));
   const availableCourses = courses.filter(course => 
-    course.status === 'live' && !student.enrolledCourses.includes(course.id)
+    course.status === 'live' && !student.enrolledCourses.some(enrollment => enrollment.courseId === course.id)
   );
 
   const overallProgress = student.progress.length > 0 
@@ -167,6 +169,13 @@ const StudentRow: React.FC<StudentRowProps> = ({
               className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 hover:scale-110 shadow-lg hover:shadow-glow-blue group/btn"
             >
               <Eye size={18} className="group-hover/btn:animate-bounce-gentle" />
+            </button>
+
+            <button 
+              onClick={onEditStudent}
+              className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 hover:scale-110 shadow-lg hover:shadow-glow-green group/btn"
+            >
+              <Edit size={18} className="group-hover/btn:animate-bounce-gentle" />
             </button>
             
             <div className="relative">

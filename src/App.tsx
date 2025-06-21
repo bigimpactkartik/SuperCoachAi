@@ -11,6 +11,7 @@ import EditCourseModal from './components/EditCourseModal';
 import CreateSuperCoachModal from './components/CreateSuperCoachModal';
 import EditSuperCoachModal from './components/EditSuperCoachModal';
 import StudentDetailsModal from './components/StudentDetailsModal';
+import EditStudentModal from './components/EditStudentModal';
 import ConversationModal from './components/ConversationModal';
 import CreateStudentModal from './components/CreateStudentModal';
 import AuthPage from './components/AuthPage';
@@ -33,6 +34,7 @@ function App() {
     createCourseVersion,
     makeCourseeLive,
     createStudent,
+    updateStudent,
     createSuperCoach,
     updateSuperCoach,
     deleteSuperCoach
@@ -44,6 +46,7 @@ function App() {
   const [showCreateSuperCoach, setShowCreateSuperCoach] = useState(false);
   const [showEditSuperCoach, setShowEditSuperCoach] = useState(false);
   const [showStudentDetails, setShowStudentDetails] = useState(false);
+  const [showEditStudent, setShowEditStudent] = useState(false);
   const [showConversation, setShowConversation] = useState(false);
   const [showCreateStudent, setShowCreateStudent] = useState(false);
   
@@ -171,6 +174,19 @@ function App() {
     }
   };
 
+  const handleEditStudent = async (studentData: Partial<Student>) => {
+    if (!selectedStudent) return;
+    
+    try {
+      await updateStudent(selectedStudent.id, studentData);
+      setShowEditStudent(false);
+      setSelectedStudent(null);
+    } catch (err) {
+      console.error('Failed to update student:', err);
+      alert('Failed to update student. Please try again.');
+    }
+  };
+
   const handleCreateSuperCoach = async (superCoachData: Partial<SuperCoach>) => {
     try {
       await createSuperCoach(superCoachData);
@@ -199,7 +215,8 @@ function App() {
     if (!superCoach) return;
 
     // Check if SuperCoach is assigned to any courses
-    if (superCoach.coursesAssigned.length > 0) {
+    const assignedCourses = courses.filter(c => c.superCoachId === superCoachId);
+    if (assignedCourses.length > 0) {
       alert('Cannot delete SuperCoach that is assigned to courses. Please unassign from courses first.');
       return;
     }
@@ -262,6 +279,10 @@ function App() {
             onViewDetails={(student) => {
               setSelectedStudent(student);
               setShowStudentDetails(true);
+            }}
+            onEditStudent={(student) => {
+              setSelectedStudent(student);
+              setShowEditStudent(true);
             }}
             onAddToCourse={handleAddStudentToCourse}
             onRemoveFromCourse={handleRemoveStudentFromCourse}
@@ -354,6 +375,17 @@ function App() {
             setShowStudentDetails(false);
             setSelectedStudent(null);
           }}
+        />
+      )}
+
+      {showEditStudent && selectedStudent && (
+        <EditStudentModal 
+          student={selectedStudent}
+          onClose={() => {
+            setShowEditStudent(false);
+            setSelectedStudent(null);
+          }}
+          onSubmit={handleEditStudent}
         />
       )}
 

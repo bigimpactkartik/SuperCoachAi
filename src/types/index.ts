@@ -35,6 +35,9 @@ export interface Student {
   id: number;
   name: string;
   email: string;
+  phone?: string;
+  telegram_id?: string;
+  about?: string;
   avatar?: string;
   status: 'new' | 'in-progress' | 'stuck' | 'completed';
   enrolledCourses: StudentCourseEnrollment[];

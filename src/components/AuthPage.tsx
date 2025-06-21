@@ -1,24 +1,17 @@
 import React, { useState } from 'react';
-import { Target, Phone, User, Mail, ArrowRight, Sparkles, Shield, Zap } from 'lucide-react';
+import { Target, Mail, ArrowRight, Sparkles, Shield, Zap, Lock } from 'lucide-react';
 
 interface AuthPageProps {
   onAuthenticated: () => void;
 }
 
 const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
-  const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
-    phone: ''
+    password: ''
   });
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isLoading, setIsLoading] = useState(false);
-
-  const validatePhone = (phone: string) => {
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
-  };
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -28,24 +21,16 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!validatePhone(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
-    }
-
-    if (isSignUp) {
-      if (!formData.email.trim()) {
-        newErrors.email = 'Email is required';
-      } else if (!validateEmail(formData.email)) {
-        newErrors.email = 'Please enter a valid email address';
-      }
+    if (!formData.password.trim()) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.trim().length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
     }
 
     setErrors(newErrors);
@@ -61,11 +46,19 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
 
     setIsLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsLoading(false);
-    onAuthenticated();
+    try {
+      // For demo purposes, we'll use a simple authentication
+      // In production, this would authenticate against the coaches table
+      if (formData.email.includes('@supercoach.ai') && formData.password === 'coach123') {
+        onAuthenticated();
+      } else {
+        setErrors({ email: 'Invalid credentials. Use a @supercoach.ai email and password "coach123"' });
+      }
+    } catch (err) {
+      setErrors({ email: 'Authentication failed. Please try again.' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -113,15 +106,15 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold">SuperCoach AI</h1>
-                <p className="text-white/80">Your AI-Powered Learning Companion</p>
+                <p className="text-white/80">Coach Dashboard</p>
               </div>
             </div>
             
             <h2 className="text-4xl font-bold mb-4 leading-tight">
-              Transform Your Learning Journey with AI
+              Manage Your Students with AI-Powered Insights
             </h2>
             <p className="text-xl text-white/90 mb-8">
-              Experience personalized coaching, track your progress, and achieve your goals faster than ever before.
+              Access your coaching dashboard to monitor student progress, manage courses, and provide personalized guidance.
             </p>
           </div>
 
@@ -151,103 +144,73 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
             </div>
             <div>
               <h1 className="text-2xl font-bold gradient-text">SuperCoach AI</h1>
-              <p className="text-sm text-gray-600">Your AI Learning Companion</p>
+              <p className="text-sm text-gray-600">Coach Dashboard</p>
             </div>
           </div>
 
           <div className="glass rounded-2xl p-8 shadow-2xl border border-white/20">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold gradient-text mb-2">
-                {isSignUp ? 'Create Account' : 'Welcome Back'}
+                Coach Sign In
               </h2>
               <p className="text-gray-600">
-                {isSignUp 
-                  ? 'Join thousands of learners on their journey to success' 
-                  : 'Sign in to continue your learning journey'
-                }
+                Access your coaching dashboard to manage students and courses
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Name Field */}
+              {/* Email Field */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Full Name
+                  Email Address
                 </label>
                 <div className="relative">
-                  <User size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Mail size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
                     className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 bg-white/80 backdrop-blur-sm ${
-                      errors.name 
+                      errors.email 
                         ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500' 
                         : 'border-gray-200 focus:ring-blue-500/20 focus:border-blue-500'
                     }`}
-                    placeholder="Enter your full name"
+                    placeholder="coach@supercoach.ai"
+                    required
                   />
                 </div>
-                {errors.name && (
+                {errors.email && (
                   <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                     <span className="w-1 h-1 bg-red-600 rounded-full"></span>
-                    {errors.name}
+                    {errors.email}
                   </p>
                 )}
               </div>
 
-              {/* Email Field (Sign Up Only) */}
-              {isSignUp && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 bg-white/80 backdrop-blur-sm ${
-                        errors.email 
-                          ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500' 
-                          : 'border-gray-200 focus:ring-blue-500/20 focus:border-blue-500'
-                      }`}
-                      placeholder="Enter your email address"
-                    />
-                  </div>
-                  {errors.email && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                      <span className="w-1 h-1 bg-red-600 rounded-full"></span>
-                      {errors.email}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Phone Field */}
+              {/* Password Field */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Phone Number
+                  Password
                 </label>
                 <div className="relative">
-                  <Phone size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Lock size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
                     className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 bg-white/80 backdrop-blur-sm ${
-                      errors.phone 
+                      errors.password 
                         ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500' 
                         : 'border-gray-200 focus:ring-blue-500/20 focus:border-blue-500'
                     }`}
-                    placeholder="Enter your phone number"
+                    placeholder="Enter your password"
+                    required
                   />
                 </div>
-                {errors.phone && (
+                {errors.password && (
                   <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                     <span className="w-1 h-1 bg-red-600 rounded-full"></span>
-                    {errors.phone}
+                    {errors.password}
                   </p>
                 )}
               </div>
@@ -261,46 +224,34 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
                 {isLoading ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Processing...
+                    Signing In...
                   </>
                 ) : (
                   <>
-                    Get Started
+                    Sign In
                     <ArrowRight size={20} />
                   </>
                 )}
               </button>
             </form>
 
-            {/* Toggle Auth Mode */}
-            <div className="mt-6 text-center">
-              <p className="text-gray-600">
-                {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsSignUp(!isSignUp);
-                    setErrors({});
-                    setFormData({ name: '', email: '', phone: '' });
-                  }}
-                  className="ml-2 text-blue-600 hover:text-blue-700 font-semibold transition-colors duration-200"
-                >
-                  {isSignUp ? 'Sign In' : 'Sign Up'}
-                </button>
-              </p>
-            </div>
-
-            {/* Terms */}
-            {isSignUp && (
-              <div className="mt-6 text-center">
-                <p className="text-xs text-gray-500">
-                  By creating an account, you agree to our{' '}
-                  <a href="#" className="text-blue-600 hover:text-blue-700 underline">Terms of Service</a>
-                  {' '}and{' '}
-                  <a href="#" className="text-blue-600 hover:text-blue-700 underline">Privacy Policy</a>
-                </p>
+            {/* Demo Credentials */}
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <div className="flex items-start gap-3">
+                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
+                  <span className="text-white text-xs font-bold">i</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-blue-900 mb-1">Demo Credentials</h4>
+                  <p className="text-sm text-blue-800 mb-2">
+                    Use any @supercoach.ai email with password: <code className="bg-blue-100 px-1 rounded">coach123</code>
+                  </p>
+                  <p className="text-xs text-blue-700">
+                    Example: coach.maya@supercoach.ai
+                  </p>
+                </div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* Mobile Features */}

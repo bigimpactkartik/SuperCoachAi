@@ -7,6 +7,7 @@ interface StudentsTabProps {
   students: Student[];
   courses: Course[];
   onViewDetails: (student: Student) => void;
+  onEditStudent: (student: Student) => void;
   onAddToCourse: (studentId: number, courseId: number) => void;
   onRemoveFromCourse: (studentId: number, courseId: number) => void;
 }
@@ -15,6 +16,7 @@ const StudentsTab: React.FC<StudentsTabProps> = ({
   students, 
   courses, 
   onViewDetails, 
+  onEditStudent,
   onAddToCourse, 
   onRemoveFromCourse 
 }) => {
@@ -25,7 +27,7 @@ const StudentsTab: React.FC<StudentsTabProps> = ({
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          student.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCourse = !selectedCourse || student.enrolledCourses.includes(parseInt(selectedCourse));
+    const matchesCourse = !selectedCourse || student.enrolledCourses.some(enrollment => enrollment.courseId === parseInt(selectedCourse));
     const matchesStatus = !selectedStatus || student.status === selectedStatus;
     return matchesSearch && matchesCourse && matchesStatus;
   });
@@ -161,6 +163,7 @@ const StudentsTab: React.FC<StudentsTabProps> = ({
               student={student} 
               courses={courses}
               onViewDetails={() => onViewDetails(student)}
+              onEditStudent={() => onEditStudent(student)}
               onAddToCourse={onAddToCourse}
               onRemoveFromCourse={onRemoveFromCourse}
             />
