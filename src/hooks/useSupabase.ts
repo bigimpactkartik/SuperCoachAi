@@ -98,14 +98,14 @@ export const useSupabase = () => {
     }
   };
 
-  // Course operations (only using fields that exist)
+  // Course operations - ONLY using fields that exist in database
   const createCourse = async (courseData: Partial<Course>) => {
     try {
       const { data, error } = await supabase
         .from('courses')
         .insert({
           title: courseData.title!,
-          coach_id: courseData.superCoachId
+          coach_id: courseData.superCoachId || null
         })
         .select()
         .single();
@@ -127,7 +127,7 @@ export const useSupabase = () => {
         .from('courses')
         .update({
           title: courseData.title,
-          coach_id: courseData.superCoachId
+          coach_id: courseData.superCoachId || null
         })
         .eq('id', courseId)
         .select()
@@ -153,7 +153,7 @@ export const useSupabase = () => {
         .from('courses')
         .insert({
           title: `${course.title} (v${course.version + 1})`,
-          coach_id: course.superCoachId
+          coach_id: course.superCoachId || null
         })
         .select()
         .single();
@@ -185,7 +185,7 @@ export const useSupabase = () => {
     }
   };
 
-  // Student operations (only using fields that exist)
+  // Student operations - ONLY using fields that exist in database
   const createStudent = async (studentData: Partial<Student>, courseId?: number) => {
     try {
       const { data, error } = await supabase
@@ -195,7 +195,7 @@ export const useSupabase = () => {
           telegram_id: null,
           phone_number: null,
           about: null,
-          email: studentData.email!
+          email: studentData.email || null
         })
         .select()
         .single();
@@ -211,7 +211,8 @@ export const useSupabase = () => {
           .from('enrollments')
           .insert({
             student_id: data.id,
-            course_id: courseId
+            course_id: courseId,
+            enrolled_at: new Date().toISOString()
           });
       }
       
@@ -222,7 +223,7 @@ export const useSupabase = () => {
     }
   };
 
-  // SuperCoach operations (using coaches table with only existing fields)
+  // SuperCoach operations - ONLY using fields that exist in coaches table
   const createSuperCoach = async (superCoachData: Partial<SuperCoach>) => {
     try {
       const { data, error } = await supabase
@@ -252,7 +253,8 @@ export const useSupabase = () => {
         .from('coaches')
         .update({
           name: superCoachData.name,
-          email: superCoachData.name ? `${superCoachData.name.toLowerCase().replace(/\s+/g, '.')}@supercoach.ai` : undefined
+          email: superCoachData.name ? `${superCoachData.name.toLowerCase().replace(/\s+/g, '.')}@supercoach.ai` : undefined,
+          phone: null
         })
         .eq('id', superCoachId)
         .select()
