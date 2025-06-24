@@ -64,19 +64,25 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
 
   const handleSignUp = async () => {
     try {
-      // Check if coach already exists
-      const { data: existingCoach } = await supabase
+      // Check if coach already exists - use limit(1) instead of single()
+      const { data: existingCoaches, error: checkError } = await supabase
         .from('coaches')
         .select('*')
         .eq('email', formData.email)
-        .single();
+        .limit(1);
 
-      if (existingCoach) {
+      if (checkError) {
+        console.error('Error checking existing coach:', checkError);
+        setErrors({ email: 'Error checking existing account. Please try again.' });
+        return;
+      }
+
+      if (existingCoaches && existingCoaches.length > 0) {
         setErrors({ email: 'A coach with this email already exists' });
         return;
       }
 
-      // Create new coach
+      // Create new coach - let Supabase handle the ID auto-increment
       const { data: newCoach, error } = await supabase
         .from('coaches')
         .insert({
@@ -87,7 +93,16 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Insert error:', error);
+        if (error.code === '23505') {
+          // Handle duplicate key constraint violation
+          setErrors({ email: 'Registration failed due to a database conflict. Please try again or contact support.' });
+        } else {
+          setErrors({ email: 'Registration failed. Please try again.' });
+        }
+        return;
+      }
 
       // Auto sign in after successful registration
       await onAuthenticated(formData.name, formData.email, formData.phone);
@@ -99,18 +114,26 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
 
   const handleSignIn = async () => {
     try {
-      // Find coach by name and phone
-      const { data: coach, error } = await supabase
+      // Find coach by name and phone - use limit(1) instead of single()
+      const { data: coaches, error } = await supabase
         .from('coaches')
         .select('*')
         .eq('name', formData.name)
         .eq('phone', formData.phone)
-        .single();
+        .limit(1);
 
-      if (error || !coach) {
-        throw new Error('Invalid credentials - coach not found');
+      if (error) {
+        console.error('Sign in query error:', error);
+        setErrors({ phone: 'Sign in failed. Please try again.' });
+        return;
       }
 
+      if (!coaches || coaches.length === 0) {
+        setErrors({ phone: 'Invalid credentials. Please check your name and phone number.' });
+        return;
+      }
+
+      const coach = coaches[0];
       await onAuthenticated(coach.name, coach.email, coach.phone);
     } catch (err) {
       console.error('Sign in error:', err);
