@@ -97,7 +97,7 @@ export interface TaskAssignment {
   courseVersion: number;
 }
 
-export interface Promise {
+export interface StudentPromise {
   id: number;
   studentId: number;
   taskId: number;

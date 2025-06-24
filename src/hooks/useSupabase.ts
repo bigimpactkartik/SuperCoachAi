@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Course, Student, SuperCoach, Conversation, Coach, CourseVersion, Module, Task, StudentCourseEnrollment, TaskAssignment, Promise } from '../types';
+import { Course, Student, SuperCoach, Conversation, Coach, CourseVersion, Module, Task, StudentCourseEnrollment, TaskAssignment, StudentPromise } from '../types';
 
 // Transform database rows to application types
 const transformCourse = (row: any, versions: CourseVersion[] = [], modules: Module[] = []): Course => {
@@ -85,7 +85,7 @@ const transformEnrollment = (row: any): StudentCourseEnrollment => ({
   status: row.status
 });
 
-const transformPromise = (row: any): Promise => ({
+const transformPromise = (row: any): StudentPromise => ({
   id: row.id,
   studentId: row.student_id,
   taskId: row.task_id,
@@ -125,7 +125,7 @@ export const useSupabase = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [superCoaches, setSuperCoaches] = useState<SuperCoach[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [promises, setPromises] = useState<Promise[]>([]);
+  const [promises, setPromises] = useState<StudentPromise[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [currentCoach, setCurrentCoach] = useState<Coach | null>(null);
   const [loading, setLoading] = useState(true);

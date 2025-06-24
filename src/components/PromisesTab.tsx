@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Search, Filter, Calendar, Clock, CheckCircle, AlertCircle, User, Target } from 'lucide-react';
-import { Promise, Student, Task } from '../types';
+import { StudentPromise, Student, Task } from '../types';
 
 interface PromisesTabProps {
-  promises: Promise[];
+  promises: StudentPromise[];
   students: Student[];
   tasks: Task[];
 }
