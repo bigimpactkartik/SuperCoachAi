@@ -85,6 +85,16 @@ const transformEnrollment = (row: any): StudentCourseEnrollment => ({
   status: row.status
 });
 
+const transformPromise = (row: any): Promise => ({
+  id: row.id,
+  studentId: row.student_id,
+  taskId: row.task_id,
+  promiseDatetime: row.promise_datetime,
+  dueDate: row.due_date,
+  checked: row.checked,
+  createdAt: row.created_at
+});
+
 const transformSuperCoach = (row: any): SuperCoach => ({
   id: row.id,
   name: row.name,
@@ -115,6 +125,8 @@ export const useSupabase = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [superCoaches, setSuperCoaches] = useState<SuperCoach[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [promises, setPromises] = useState<Promise[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [currentCoach, setCurrentCoach] = useState<Coach | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +147,8 @@ export const useSupabase = () => {
         enrollmentsRes,
         coachesRes,
         conversationsRes,
-        taskAssignmentsRes
+        taskAssignmentsRes,
+        promisesRes
       ] = await Promise.all([
         supabase.from('courses').select('*').order('id', { ascending: false }),
         supabase.from('course_versions').select('*'),
@@ -145,7 +158,8 @@ export const useSupabase = () => {
         supabase.from('enrollments').select('*'),
         supabase.from('coaches').select('*').order('id', { ascending: false }),
         supabase.from('conversations').select('*').order('timestamp', { ascending: false }),
-        supabase.from('task_assignments').select('*')
+        supabase.from('task_assignments').select('*'),
+        supabase.from('promises').select('*').order('created_at', { ascending: false })
       ]);
 
       if (coursesRes.error) throw coursesRes.error;
@@ -157,6 +171,7 @@ export const useSupabase = () => {
       if (coachesRes.error) throw coachesRes.error;
       if (conversationsRes.error) throw conversationsRes.error;
       if (taskAssignmentsRes.error) throw taskAssignmentsRes.error;
+      if (promisesRes.error) throw promisesRes.error;
 
       // Transform data with relationships
       const courseVersions = courseVersionsRes.data.map(transformCourseVersion);
@@ -168,6 +183,8 @@ export const useSupabase = () => {
       setStudents(studentsRes.data.map(row => transformStudent(row, enrollments)));
       setSuperCoaches(coachesRes.data.map(transformSuperCoach));
       setConversations(conversationsRes.data.map(transformConversation));
+      setPromises(promisesRes.data.map(transformPromise));
+      setTasks(tasks);
     } catch (err) {
       console.error('Error fetching data:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -494,6 +511,8 @@ export const useSupabase = () => {
     students,
     superCoaches,
     conversations,
+    promises,
+    tasks,
     currentCoach,
     loading,
     error,

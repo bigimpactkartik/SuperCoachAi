@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, BookOpen, Users, Bot, MessageCircle } from 'lucide-react';
+import { Home, BookOpen, Users, Bot, Calendar } from 'lucide-react';
 
 interface NavigationProps {
   activeTab: string;
@@ -12,7 +12,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab }) => {
     { id: 'courses', label: 'Courses', icon: BookOpen, color: 'from-emerald-500 to-teal-600' },
     { id: 'students', label: 'Students', icon: Users, color: 'from-purple-500 to-violet-600' },
     { id: 'supercoaches', label: 'SuperCoaches', icon: Bot, color: 'from-orange-500 to-red-500' },
-    { id: 'conversations', label: 'Conversations', icon: MessageCircle, color: 'from-pink-500 to-rose-500' }
+    { id: 'promises', label: 'Promises', icon: Calendar, color: 'from-pink-500 to-rose-500' }
   ];
 
   return (

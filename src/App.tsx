@@ -5,17 +5,16 @@ import HomePage from './components/HomePage';
 import CoursesTab from './components/CoursesTab';
 import StudentsTab from './components/StudentsTab';
 import SuperCoachesTab from './components/SuperCoachesTab';
-import ConversationsTab from './components/ConversationsTab';
+import PromisesTab from './components/PromisesTab';
 import CreateCourseModal from './components/CreateCourseModal';
 import EditCourseModal from './components/EditCourseModal';
 import CreateSuperCoachModal from './components/CreateSuperCoachModal';
 import EditSuperCoachModal from './components/EditSuperCoachModal';
 import StudentDetailsModal from './components/StudentDetailsModal';
 import EditStudentModal from './components/EditStudentModal';
-import ConversationModal from './components/ConversationModal';
 import CreateStudentModal from './components/CreateStudentModal';
 import AuthPage from './components/AuthPage';
-import { Course, Student, SuperCoach, Conversation } from './types';
+import { Course, Student, SuperCoach } from './types';
 import { useSupabase } from './hooks/useSupabase';
 
 function App() {
@@ -26,6 +25,8 @@ function App() {
     students,
     superCoaches,
     conversations,
+    promises,
+    tasks,
     currentCoach,
     loading,
     error,
@@ -48,14 +49,12 @@ function App() {
   const [showEditSuperCoach, setShowEditSuperCoach] = useState(false);
   const [showStudentDetails, setShowStudentDetails] = useState(false);
   const [showEditStudent, setShowEditStudent] = useState(false);
-  const [showConversation, setShowConversation] = useState(false);
   const [showCreateStudent, setShowCreateStudent] = useState(false);
   
   // Selected items
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [selectedSuperCoach, setSelectedSuperCoach] = useState<SuperCoach | null>(null);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
 
   // Show auth page if not authenticated
   if (!currentCoach) {
@@ -302,16 +301,12 @@ function App() {
             onDeleteSuperCoach={handleDeleteSuperCoach}
           />
         );
-      case 'conversations':
+      case 'promises':
         return (
-          <ConversationsTab 
-            conversations={conversations}
+          <PromisesTab 
+            promises={promises}
             students={students}
-            superCoaches={superCoaches}
-            onViewConversation={(conversation) => {
-              setSelectedConversation(conversation);
-              setShowConversation(true);
-            }}
+            tasks={tasks}
           />
         );
       default:
@@ -387,18 +382,6 @@ function App() {
             setSelectedStudent(null);
           }}
           onSubmit={handleEditStudent}
-        />
-      )}
-
-      {showConversation && selectedConversation && (
-        <ConversationModal 
-          conversation={selectedConversation}
-          student={students.find(s => s.id === selectedConversation.studentId)}
-          superCoach={superCoaches.find(sc => sc.id === selectedConversation.superCoachId)}
-          onClose={() => {
-            setShowConversation(false);
-            setSelectedConversation(null);
-          }}
         />
       )}
 
