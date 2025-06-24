@@ -193,22 +193,19 @@ export const useSupabase = () => {
     }
   };
 
-  // Authentication function
+  // Authentication function - updated to use name and phone for sign in
   const authenticateCoach = async (name: string, email: string, phone?: string) => {
     try {
+      // For sign in, use name and phone to find coach
       const { data: coach, error } = await supabase
         .from('coaches')
         .select('*')
         .eq('name', name)
-        .eq('email', email)
+        .eq('phone', phone || '')
         .single();
 
       if (error || !coach) {
         throw new Error('Invalid credentials - coach not found');
-      }
-
-      if (phone && coach.phone && coach.phone !== phone) {
-        throw new Error('Invalid credentials - phone number mismatch');
       }
 
       setCurrentCoach(coach);

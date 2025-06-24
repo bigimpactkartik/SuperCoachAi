@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Target, User, Mail, Phone, ArrowRight, Sparkles, Shield, Zap } from 'lucide-react';
+import { Target, User, Mail, Phone, ArrowRight, Sparkles, Shield, Zap, UserPlus } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface AuthPageProps {
   onAuthenticated: (name: string, email: string, phone?: string) => Promise<void>;
 }
 
 const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
+  const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,7 +22,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
   };
 
   const validatePhone = (phone: string) => {
-    if (!phone) return true; // Phone is optional
+    if (!phone) return !isSignUp; // Phone required for signup, optional for signin
     const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
     return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
   };
@@ -34,18 +36,86 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
       newErrors.name = 'Name must be at least 2 characters';
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
+    if (isSignUp) {
+      // Sign up validation
+      if (!formData.email.trim()) {
+        newErrors.email = 'Email is required';
+      } else if (!validateEmail(formData.email)) {
+        newErrors.email = 'Please enter a valid email address';
+      }
 
-    if (formData.phone && !validatePhone(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
+      if (!formData.phone.trim()) {
+        newErrors.phone = 'Phone number is required for registration';
+      } else if (!validatePhone(formData.phone)) {
+        newErrors.phone = 'Please enter a valid phone number';
+      }
+    } else {
+      // Sign in validation - only name and phone
+      if (!formData.phone.trim()) {
+        newErrors.phone = 'Phone number is required for sign in';
+      } else if (!validatePhone(formData.phone)) {
+        newErrors.phone = 'Please enter a valid phone number';
+      }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSignUp = async () => {
+    try {
+      // Check if coach already exists
+      const { data: existingCoach } = await supabase
+        .from('coaches')
+        .select('*')
+        .eq('email', formData.email)
+        .single();
+
+      if (existingCoach) {
+        setErrors({ email: 'A coach with this email already exists' });
+        return;
+      }
+
+      // Create new coach
+      const { data: newCoach, error } = await supabase
+        .from('coaches')
+        .insert({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Auto sign in after successful registration
+      await onAuthenticated(formData.name, formData.email, formData.phone);
+    } catch (err) {
+      console.error('Registration error:', err);
+      setErrors({ email: 'Registration failed. Please try again.' });
+    }
+  };
+
+  const handleSignIn = async () => {
+    try {
+      // Find coach by name and phone
+      const { data: coach, error } = await supabase
+        .from('coaches')
+        .select('*')
+        .eq('name', formData.name)
+        .eq('phone', formData.phone)
+        .single();
+
+      if (error || !coach) {
+        throw new Error('Invalid credentials - coach not found');
+      }
+
+      await onAuthenticated(coach.name, coach.email, coach.phone);
+    } catch (err) {
+      console.error('Sign in error:', err);
+      setErrors({ phone: 'Invalid credentials. Please check your name and phone number.' });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,9 +128,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
     setIsLoading(true);
     
     try {
-      await onAuthenticated(formData.name, formData.email, formData.phone);
+      if (isSignUp) {
+        await handleSignUp();
+      } else {
+        await handleSignIn();
+      }
     } catch (err) {
-      setErrors({ email: 'Authentication failed. Please check your credentials and try again.' });
+      console.error('Authentication error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -71,6 +145,12 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const toggleMode = () => {
+    setIsSignUp(!isSignUp);
+    setFormData({ name: '', email: '', phone: '' });
+    setErrors({});
   };
 
   const features = [
@@ -116,10 +196,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
             </div>
             
             <h2 className="text-4xl font-bold mb-4 leading-tight">
-              Manage Your Students with AI-Powered Insights
+              {isSignUp ? 'Join SuperCoach AI' : 'Welcome Back to SuperCoach AI'}
             </h2>
             <p className="text-xl text-white/90 mb-8">
-              Access your coaching dashboard to monitor student progress, manage courses, and provide personalized guidance.
+              {isSignUp 
+                ? 'Create your coach account and start managing students with AI-powered insights.'
+                : 'Access your coaching dashboard to monitor student progress and provide personalized guidance.'
+              }
             </p>
           </div>
 
@@ -156,10 +239,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
           <div className="glass rounded-2xl p-8 shadow-2xl border border-white/20">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold gradient-text mb-2">
-                Coach Sign In
+                {isSignUp ? 'Create Account' : 'Coach Sign In'}
               </h2>
               <p className="text-gray-600">
-                Enter your coach credentials to access the dashboard
+                {isSignUp 
+                  ? 'Register as a new coach to get started'
+                  : 'Enter your credentials to access the dashboard'
+                }
               </p>
             </div>
 
@@ -192,38 +278,40 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
                 )}
               </div>
 
-              {/* Email Field */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 bg-white/80 backdrop-blur-sm ${
-                      errors.email 
-                        ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500' 
-                        : 'border-gray-200 focus:ring-blue-500/20 focus:border-blue-500'
-                    }`}
-                    placeholder="coach@supercoach.ai"
-                    required
-                  />
+              {/* Email Field - Only for Sign Up */}
+              {isSignUp && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 bg-white/80 backdrop-blur-sm ${
+                        errors.email 
+                          ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500' 
+                          : 'border-gray-200 focus:ring-blue-500/20 focus:border-blue-500'
+                      }`}
+                      placeholder="coach@supercoach.ai"
+                      required
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                      <span className="w-1 h-1 bg-red-600 rounded-full"></span>
+                      {errors.email}
+                    </p>
+                  )}
                 </div>
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                    <span className="w-1 h-1 bg-red-600 rounded-full"></span>
-                    {errors.email}
-                  </p>
-                )}
-              </div>
+              )}
 
               {/* Phone Field */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Phone Number (Optional)
+                  Phone Number
                 </label>
                 <div className="relative">
                   <Phone size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -237,6 +325,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
                         : 'border-gray-200 focus:ring-blue-500/20 focus:border-blue-500'
                     }`}
                     placeholder="+1 (555) 123-4567"
+                    required
                   />
                 </div>
                 {errors.phone && (
@@ -256,34 +345,50 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
                 {isLoading ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Signing In...
+                    {isSignUp ? 'Creating Account...' : 'Signing In...'}
                   </>
                 ) : (
                   <>
-                    Sign In
-                    <ArrowRight size={20} />
+                    {isSignUp ? <UserPlus size={20} /> : <ArrowRight size={20} />}
+                    {isSignUp ? 'Create Account' : 'Sign In'}
                   </>
                 )}
               </button>
+
+              {/* Toggle Mode */}
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={toggleMode}
+                  className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200"
+                >
+                  {isSignUp 
+                    ? 'Already have an account? Sign In' 
+                    : "Don't have an account? Sign Up"
+                  }
+                </button>
+              </div>
             </form>
 
-            {/* Demo Info */}
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
-                  <span className="text-white text-xs font-bold">i</span>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-blue-900 mb-1">Demo Access</h4>
-                  <p className="text-sm text-blue-800 mb-2">
-                    Use any coach credentials from the coaches table to sign in.
-                  </p>
-                  <p className="text-xs text-blue-700">
-                    Example: Coach Maya, coach.maya@supercoach.ai, +1 (555) 123-4567
-                  </p>
+            {/* Demo Info - Only show for Sign In */}
+            {!isSignUp && (
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
+                    <span className="text-white text-xs font-bold">i</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-blue-900 mb-1">Demo Access</h4>
+                    <p className="text-sm text-blue-800 mb-2">
+                      Use any coach name and phone number from the coaches table to sign in.
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      Example: Coach Maya, +1 (555) 123-4567
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Mobile Features */}
