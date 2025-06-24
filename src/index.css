@@ -7,6 +7,55 @@
     @apply bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+  
+  /* Dark mode styles */
+  .dark body {
+    @apply bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900;
+  }
+  
+  .dark .glass {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .dark .glass-dark {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .dark .text-gray-900 {
+    @apply text-gray-100;
+  }
+  
+  .dark .text-gray-700 {
+    @apply text-gray-300;
+  }
+  
+  .dark .text-gray-600 {
+    @apply text-gray-400;
+  }
+  
+  .dark .text-gray-500 {
+    @apply text-gray-500;
+  }
+  
+  .dark .bg-white {
+    @apply bg-gray-800;
+  }
+  
+  .dark .border-gray-200 {
+    @apply border-gray-700;
+  }
+  
+  .dark .hover\:bg-gray-50:hover {
+    @apply bg-gray-700;
+  }
+  
+  .dark .hover\:bg-gray-100:hover {
+    @apply bg-gray-600;
+  }
 }
 
 @layer utilities {
@@ -124,7 +173,21 @@
   background: linear-gradient(45deg, #2563eb, #7c3aed);
 }
 
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #60a5fa, #a78bfa);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+}
+
 /* Custom focus styles */
 .focus-ring {
   @apply focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500;
+}
+
+/* Theme transition */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }

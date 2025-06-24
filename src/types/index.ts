@@ -10,34 +10,55 @@ export interface Course {
   enrolledStudents: number;
   completionRate: number;
   superCoachId: number | null;
-  baseId?: number; // Links all versions of the same course
-  isCurrentVersion?: boolean; // Marks the latest version
+  baseId?: number;
+  isCurrentVersion?: boolean;
+  isActive: boolean;
+}
+
+export interface CourseVersion {
+  id: number;
+  courseId: number;
+  versionNumber: number;
+  updatedAt: string;
+  isActive: boolean;
+  isCurrent: boolean;
 }
 
 export interface Module {
   id: number;
+  courseId: number;
   title: string;
   description: string;
   tasks: Task[];
   order: number;
+  courseVersion: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Task {
   id: number;
+  courseId: number;
   title: string;
   description: string;
   type: 'video' | 'reading' | 'quiz' | 'assignment';
-  order: number;
-  estimatedTime: number; // in minutes
+  moduleId: number;
+  timeToComplete: number | null;
+  courseVersion: number;
+  orderIndex: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Student {
   id: number;
   name: string;
-  email: string;
-  phone?: string;
-  telegram_id?: string;
-  about?: string;
+  email: string | null;
+  phone?: string | null;
+  telegram_id?: string | null;
+  about?: string | null;
   avatar?: string;
   status: 'new' | 'in-progress' | 'stuck' | 'completed';
   enrolledCourses: StudentCourseEnrollment[];
@@ -47,10 +68,12 @@ export interface Student {
 }
 
 export interface StudentCourseEnrollment {
+  id: number;
+  studentId: number;
   courseId: number;
-  courseVersion: number;
   enrolledAt: string;
-  baseId: number; // Links to the base course
+  courseVersionId: number;
+  status: 'active' | 'completed' | 'dropped' | null;
 }
 
 export interface StudentProgress {
@@ -60,7 +83,28 @@ export interface StudentProgress {
   taskId: number;
   status: 'not-started' | 'in-progress' | 'completed';
   completedAt?: string;
-  timeSpent: number; // in minutes
+  timeSpent: number;
+}
+
+export interface TaskAssignment {
+  id: number;
+  studentId: number;
+  taskId: number;
+  status: 'pending' | 'in_progress' | 'completed' | null;
+  updatedAt: string;
+  dueDate: string;
+  completedAt: string | null;
+  courseVersion: number;
+}
+
+export interface Promise {
+  id: number;
+  studentId: number;
+  taskId: number;
+  promiseDatetime: string;
+  dueDate: string;
+  checked: boolean;
+  createdAt: string;
 }
 
 export interface SuperCoach {
@@ -88,4 +132,16 @@ export interface Message {
   content: string;
   timestamp: string;
   type: 'text' | 'voice' | 'file';
+}
+
+export interface Coach {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+}
+
+export interface Theme {
+  name: string;
+  value: 'light' | 'dark' | 'auto';
 }

@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { Target, User, Mail, Phone, ArrowRight, Sparkles, Shield, Zap } from 'lucide-react';
-import { useSupabase } from '../hooks/useSupabase';
 
 interface AuthPageProps {
-  onAuthenticated: () => void;
+  onAuthenticated: (name: string, email: string, phone?: string) => Promise<void>;
 }
 
 const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
-  const { authenticateCoach } = useSupabase();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -60,8 +58,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
     setIsLoading(true);
     
     try {
-      await authenticateCoach(formData.name, formData.email, formData.phone);
-      onAuthenticated();
+      await onAuthenticated(formData.name, formData.email, formData.phone);
     } catch (err) {
       setErrors({ email: 'Authentication failed. Please check your credentials and try again.' });
     } finally {

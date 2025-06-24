@@ -19,7 +19,6 @@ import { Course, Student, SuperCoach, Conversation } from './types';
 import { useSupabase } from './hooks/useSupabase';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   
   const {
@@ -27,8 +26,10 @@ function App() {
     students,
     superCoaches,
     conversations,
+    currentCoach,
     loading,
     error,
+    authenticateCoach,
     createCourse,
     updateCourse,
     createCourseVersion,
@@ -57,8 +58,8 @@ function App() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
 
   // Show auth page if not authenticated
-  if (!isAuthenticated) {
-    return <AuthPage onAuthenticated={() => setIsAuthenticated(true)} />;
+  if (!currentCoach) {
+    return <AuthPage onAuthenticated={authenticateCoach} />;
   }
 
   // Show loading state

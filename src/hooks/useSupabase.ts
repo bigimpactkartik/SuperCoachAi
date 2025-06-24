@@ -1,37 +1,88 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Course, Student, SuperCoach, Conversation } from '../types';
+import { Course, Student, SuperCoach, Conversation, Coach, CourseVersion, Module, Task, StudentCourseEnrollment, TaskAssignment, Promise } from '../types';
 
-// Transform database row to application type with minimal defaults
-const transformCourse = (row: any): Course => ({
+// Transform database rows to application types
+const transformCourse = (row: any, versions: CourseVersion[] = [], modules: Module[] = []): Course => {
+  const currentVersion = versions.find(v => v.courseId === row.id && v.isCurrent) || { versionNumber: 1 };
+  
+  return {
+    id: row.id,
+    title: row.title,
+    description: '', // Default
+    status: row.is_active ? 'live' : 'draft',
+    version: currentVersion.versionNumber,
+    modules: modules.filter(m => m.courseId === row.id),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    enrolledStudents: 0, // Will be calculated
+    completionRate: 0, // Will be calculated
+    superCoachId: row.coaches,
+    baseId: row.id,
+    isCurrentVersion: true,
+    isActive: row.is_active
+  };
+};
+
+const transformCourseVersion = (row: any): CourseVersion => ({
   id: row.id,
-  title: row.title,
-  description: '', // Not in database - default
-  status: 'draft', // Not in database - default
-  version: 1, // Not in database - default
-  modules: [], // Not in database - default
-  createdAt: new Date().toISOString(), // Not in database - default
-  updatedAt: new Date().toISOString(), // Not in database - default
-  enrolledStudents: 0, // Not in database - default
-  completionRate: 0, // Not in database - default
-  superCoachId: row.coach_id,
-  baseId: row.id,
-  isCurrentVersion: true // Not in database - default
+  courseId: row.course_id,
+  versionNumber: row.version_number,
+  updatedAt: row.updated_at,
+  isActive: row.is_active,
+  isCurrent: row.is_current
 });
 
-const transformStudent = (row: any): Student => ({
+const transformModule = (row: any, tasks: Task[] = []): Module => ({
+  id: row.id,
+  courseId: row.course_id,
+  title: row.title,
+  description: '', // Default
+  tasks: tasks.filter(t => t.moduleId === row.id),
+  order: row.order_id,
+  courseVersion: row.course_version,
+  isActive: row.is_active,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at
+});
+
+const transformTask = (row: any): Task => ({
+  id: row.id,
+  courseId: row.course_id,
+  title: row.title,
+  description: '', // Default
+  type: 'video', // Default
+  moduleId: row.module_id,
+  timeToComplete: row.timetocomplete,
+  courseVersion: row.course_version,
+  orderIndex: row.order_index,
+  isActive: row.is_active,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at
+});
+
+const transformStudent = (row: any, enrollments: StudentCourseEnrollment[] = []): Student => ({
   id: row.id,
   name: row.name,
-  email: row.email || '',
+  email: row.email,
   phone: row.phone_number,
   telegram_id: row.telegram_id,
   about: row.about,
-  avatar: undefined, // Not in database
-  status: 'new', // Not in database - default
-  enrolledCourses: [], // Not in database - default
-  progress: [], // Not in database - default
-  joinedAt: new Date().toISOString(), // Not in database - default
-  lastActivity: 'Recently active' // Not in database - default
+  avatar: undefined,
+  status: 'new', // Default
+  enrolledCourses: enrollments.filter(e => e.studentId === row.id),
+  progress: [], // Will be calculated from task_assignments
+  joinedAt: new Date().toISOString(), // Default
+  lastActivity: 'Recently active'
+});
+
+const transformEnrollment = (row: any): StudentCourseEnrollment => ({
+  id: row.id,
+  studentId: row.student_id,
+  courseId: row.course_id,
+  enrolledAt: row.enrolled_at,
+  courseVersionId: row.course_version_id,
+  status: row.status
 });
 
 const transformSuperCoach = (row: any): SuperCoach => ({
@@ -44,9 +95,9 @@ const transformSuperCoach = (row: any): SuperCoach => ({
 const transformConversation = (row: any): Conversation => ({
   id: row.id,
   studentId: row.student_id,
-  superCoachId: 1, // Not in database - default
-  courseId: 1, // Not in database - default
-  courseVersion: 1, // Not in database - default
+  superCoachId: 1, // Default
+  courseId: 1, // Default
+  courseVersion: 1, // Default
   messages: [{
     id: row.id,
     senderId: row.student_id,
@@ -64,29 +115,57 @@ export const useSupabase = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [superCoaches, setSuperCoaches] = useState<SuperCoach[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentCoach, setCurrentCoach] = useState<Coach | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch all data
+  // Fetch all data with proper relationships
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const [coursesRes, studentsRes, coachesRes, conversationsRes] = await Promise.all([
+      // Fetch all related data
+      const [
+        coursesRes,
+        courseVersionsRes,
+        modulesRes,
+        tasksRes,
+        studentsRes,
+        enrollmentsRes,
+        coachesRes,
+        conversationsRes,
+        taskAssignmentsRes
+      ] = await Promise.all([
         supabase.from('courses').select('*').order('id', { ascending: false }),
+        supabase.from('course_versions').select('*'),
+        supabase.from('modules').select('*'),
+        supabase.from('tasks').select('*'),
         supabase.from('students').select('*').order('id', { ascending: false }),
+        supabase.from('enrollments').select('*'),
         supabase.from('coaches').select('*').order('id', { ascending: false }),
-        supabase.from('conversations').select('*').order('timestamp', { ascending: false })
+        supabase.from('conversations').select('*').order('timestamp', { ascending: false }),
+        supabase.from('task_assignments').select('*')
       ]);
 
       if (coursesRes.error) throw coursesRes.error;
+      if (courseVersionsRes.error) throw courseVersionsRes.error;
+      if (modulesRes.error) throw modulesRes.error;
+      if (tasksRes.error) throw tasksRes.error;
       if (studentsRes.error) throw studentsRes.error;
+      if (enrollmentsRes.error) throw enrollmentsRes.error;
       if (coachesRes.error) throw coachesRes.error;
       if (conversationsRes.error) throw conversationsRes.error;
+      if (taskAssignmentsRes.error) throw taskAssignmentsRes.error;
 
-      setCourses(coursesRes.data.map(transformCourse));
-      setStudents(studentsRes.data.map(transformStudent));
+      // Transform data with relationships
+      const courseVersions = courseVersionsRes.data.map(transformCourseVersion);
+      const tasks = tasksRes.data.map(transformTask);
+      const modules = modulesRes.data.map(row => transformModule(row, tasks));
+      const enrollments = enrollmentsRes.data.map(transformEnrollment);
+
+      setCourses(coursesRes.data.map(row => transformCourse(row, courseVersions, modules)));
+      setStudents(studentsRes.data.map(row => transformStudent(row, enrollments)));
       setSuperCoaches(coachesRes.data.map(transformSuperCoach));
       setConversations(conversationsRes.data.map(transformConversation));
     } catch (err) {
@@ -97,10 +176,9 @@ export const useSupabase = () => {
     }
   };
 
-  // Authentication function - updated to use name, email, and phone
+  // Authentication function
   const authenticateCoach = async (name: string, email: string, phone?: string) => {
     try {
-      // Check if coach exists in coaches table with matching credentials
       const { data: coach, error } = await supabase
         .from('coaches')
         .select('*')
@@ -112,11 +190,11 @@ export const useSupabase = () => {
         throw new Error('Invalid credentials - coach not found');
       }
 
-      // If phone is provided, verify it matches (allowing for null/empty phone in database)
       if (phone && coach.phone && coach.phone !== phone) {
         throw new Error('Invalid credentials - phone number mismatch');
       }
 
+      setCurrentCoach(coach);
       return coach;
     } catch (err) {
       console.error('Authentication error:', err);
@@ -124,23 +202,66 @@ export const useSupabase = () => {
     }
   };
 
-  // Course operations - ONLY using fields that exist in database
-  const createCourse = async (courseData: Partial<Course>) => {
+  // Update current coach profile
+  const updateCoachProfile = async (coachData: Partial<Coach>) => {
+    if (!currentCoach) throw new Error('No authenticated coach');
+
     try {
       const { data, error } = await supabase
-        .from('courses')
-        .insert({
-          title: courseData.title!,
-          coach_id: courseData.superCoachId || null
+        .from('coaches')
+        .update({
+          name: coachData.name,
+          email: coachData.email,
+          phone: coachData.phone || null
         })
+        .eq('id', currentCoach.id)
         .select()
         .single();
 
       if (error) throw error;
       
-      const newCourse = transformCourse(data);
-      setCourses(prev => [newCourse, ...prev]);
-      return newCourse;
+      setCurrentCoach(data);
+      return data;
+    } catch (err) {
+      console.error('Error updating coach profile:', err);
+      throw err;
+    }
+  };
+
+  // Logout function
+  const logout = () => {
+    setCurrentCoach(null);
+  };
+
+  // Course operations
+  const createCourse = async (courseData: Partial<Course>) => {
+    try {
+      const { data: course, error: courseError } = await supabase
+        .from('courses')
+        .insert({
+          title: courseData.title!,
+          coaches: courseData.superCoachId || null,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (courseError) throw courseError;
+
+      // Create initial version
+      const { error: versionError } = await supabase
+        .from('course_versions')
+        .insert({
+          course_id: course.id,
+          version_number: 1,
+          is_active: true,
+          is_current: true
+        });
+
+      if (versionError) throw versionError;
+      
+      await fetchData(); // Refresh data
+      return course;
     } catch (err) {
       console.error('Error creating course:', err);
       throw err;
@@ -153,7 +274,8 @@ export const useSupabase = () => {
         .from('courses')
         .update({
           title: courseData.title,
-          coach_id: courseData.superCoachId || null
+          coaches: courseData.superCoachId || null,
+          updated_at: new Date().toISOString()
         })
         .eq('id', courseId)
         .select()
@@ -161,9 +283,8 @@ export const useSupabase = () => {
 
       if (error) throw error;
       
-      const updatedCourse = transformCourse(data);
-      setCourses(prev => prev.map(c => c.id === courseId ? updatedCourse : c));
-      return updatedCourse;
+      await fetchData(); // Refresh data
+      return data;
     } catch (err) {
       console.error('Error updating course:', err);
       throw err;
@@ -172,24 +293,38 @@ export const useSupabase = () => {
 
   const createCourseVersion = async (courseId: number) => {
     try {
-      const course = courses.find(c => c.id === courseId);
-      if (!course) throw new Error('Course not found');
+      // Get current version number
+      const { data: versions } = await supabase
+        .from('course_versions')
+        .select('version_number')
+        .eq('course_id', courseId)
+        .order('version_number', { ascending: false })
+        .limit(1);
 
+      const nextVersion = versions && versions.length > 0 ? versions[0].version_number + 1 : 1;
+
+      // Mark current version as not current
+      await supabase
+        .from('course_versions')
+        .update({ is_current: false })
+        .eq('course_id', courseId);
+
+      // Create new version
       const { data, error } = await supabase
-        .from('courses')
+        .from('course_versions')
         .insert({
-          title: `${course.title} (v${course.version + 1})`,
-          coach_id: course.superCoachId || null
+          course_id: courseId,
+          version_number: nextVersion,
+          is_active: true,
+          is_current: true
         })
         .select()
         .single();
 
       if (error) throw error;
       
-      const newVersion = transformCourse(data);
-      setCourses(prev => [...prev, newVersion]);
-      
-      return newVersion;
+      await fetchData(); // Refresh data
+      return data;
     } catch (err) {
       console.error('Error creating course version:', err);
       throw err;
@@ -198,23 +333,27 @@ export const useSupabase = () => {
 
   const makeCourseeLive = async (courseId: number) => {
     try {
-      // Since status is not in the database, we'll just update locally
-      const course = courses.find(c => c.id === courseId);
-      if (!course) throw new Error('Course not found');
+      const { data, error } = await supabase
+        .from('courses')
+        .update({ is_active: true })
+        .eq('id', courseId)
+        .select()
+        .single();
+
+      if (error) throw error;
       
-      const updatedCourse = { ...course, status: 'live' as const };
-      setCourses(prev => prev.map(c => c.id === courseId ? updatedCourse : c));
-      return updatedCourse;
+      await fetchData(); // Refresh data
+      return data;
     } catch (err) {
       console.error('Error making course live:', err);
       throw err;
     }
   };
 
-  // Student operations - ONLY using fields that exist in database
+  // Student operations
   const createStudent = async (studentData: Partial<Student>, courseId?: number) => {
     try {
-      const { data, error } = await supabase
+      const { data: student, error: studentError } = await supabase
         .from('students')
         .insert({
           name: studentData.name!,
@@ -226,23 +365,32 @@ export const useSupabase = () => {
         .select()
         .single();
 
-      if (error) throw error;
-      
-      const newStudent = transformStudent(data);
-      setStudents(prev => [newStudent, ...prev]);
+      if (studentError) throw studentError;
 
       // If courseId provided, create enrollment
       if (courseId) {
-        await supabase
-          .from('enrollments')
-          .insert({
-            student_id: data.id,
-            course_id: courseId,
-            enrolled_at: new Date().toISOString()
-          });
+        // Get current course version
+        const { data: version } = await supabase
+          .from('course_versions')
+          .select('id')
+          .eq('course_id', courseId)
+          .eq('is_current', true)
+          .single();
+
+        if (version) {
+          await supabase
+            .from('enrollments')
+            .insert({
+              student_id: student.id,
+              course_id: courseId,
+              course_version_id: version.id,
+              status: 'active'
+            });
+        }
       }
       
-      return newStudent;
+      await fetchData(); // Refresh data
+      return student;
     } catch (err) {
       console.error('Error creating student:', err);
       throw err;
@@ -266,16 +414,15 @@ export const useSupabase = () => {
 
       if (error) throw error;
       
-      const updatedStudent = transformStudent(data);
-      setStudents(prev => prev.map(s => s.id === studentId ? updatedStudent : s));
-      return updatedStudent;
+      await fetchData(); // Refresh data
+      return data;
     } catch (err) {
       console.error('Error updating student:', err);
       throw err;
     }
   };
 
-  // SuperCoach operations - ONLY using fields that exist in coaches table
+  // SuperCoach operations
   const createSuperCoach = async (superCoachData: Partial<SuperCoach>) => {
     try {
       const { data, error } = await supabase
@@ -290,9 +437,8 @@ export const useSupabase = () => {
 
       if (error) throw error;
       
-      const newSuperCoach = transformSuperCoach(data);
-      setSuperCoaches(prev => [newSuperCoach, ...prev]);
-      return newSuperCoach;
+      await fetchData(); // Refresh data
+      return data;
     } catch (err) {
       console.error('Error creating super coach:', err);
       throw err;
@@ -314,9 +460,8 @@ export const useSupabase = () => {
 
       if (error) throw error;
       
-      const updatedSuperCoach = transformSuperCoach(data);
-      setSuperCoaches(prev => prev.map(sc => sc.id === superCoachId ? updatedSuperCoach : sc));
-      return updatedSuperCoach;
+      await fetchData(); // Refresh data
+      return data;
     } catch (err) {
       console.error('Error updating super coach:', err);
       throw err;
@@ -332,7 +477,7 @@ export const useSupabase = () => {
 
       if (error) throw error;
       
-      setSuperCoaches(prev => prev.filter(sc => sc.id !== superCoachId));
+      await fetchData(); // Refresh data
     } catch (err) {
       console.error('Error deleting super coach:', err);
       throw err;
@@ -349,10 +494,13 @@ export const useSupabase = () => {
     students,
     superCoaches,
     conversations,
+    currentCoach,
     loading,
     error,
     refetch: fetchData,
     authenticateCoach,
+    updateCoachProfile,
+    logout,
     createCourse,
     updateCourse,
     createCourseVersion,
