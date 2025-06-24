@@ -1,19 +1,43 @@
-import React, { useState } from 'react';
-import { Target, Bell, Settings, User } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Target, Bell, Settings, User, LogOut } from 'lucide-react';
 import ProfileModal from './ProfileModal';
 import { useSupabase } from '../hooks/useSupabase';
 
 const Header = () => {
   const { currentCoach, updateCoachProfile, logout } = useSupabase();
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleUpdateProfile = async (coachData: any) => {
     await updateCoachProfile(coachData);
   };
 
   const handleLogout = () => {
-    logout();
+    if (confirm('Are you sure you want to logout?')) {
+      logout();
+    }
+    setShowDropdown(false);
   };
+
+  const handleManageProfile = () => {
+    setShowProfileModal(true);
+    setShowDropdown(false);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <>
@@ -42,9 +66,9 @@ const Header = () => {
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-red-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
               </button>
               
-              <div className="relative group">
+              <div className="relative" ref={dropdownRef}>
                 <button
-                  onClick={() => setShowProfileModal(true)}
+                  onClick={() => setShowDropdown(!showDropdown)}
                   className="flex items-center gap-3 p-2 hover:bg-white/50 backdrop-blur-sm rounded-xl transition-all duration-200 transform hover:scale-105"
                 >
                   <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-bold text-sm cursor-pointer hover:scale-110 transition-all duration-200 shadow-lg hover:shadow-glow-green">
@@ -54,8 +78,28 @@ const Header = () => {
                     <div className="text-sm font-medium text-gray-900">{currentCoach?.name || 'Coach'}</div>
                     <div className="text-xs text-gray-600">{currentCoach?.email || 'coach@supercoach.ai'}</div>
                   </div>
-                  <Settings size={16} className="text-gray-400 group-hover:text-gray-600 transition-colors duration-200" />
+                  <Settings size={16} className={`text-gray-400 transition-all duration-200 ${showDropdown ? 'rotate-90 text-gray-600' : 'group-hover:text-gray-600'}`} />
                 </button>
+
+                {/* Dropdown Menu */}
+                {showDropdown && (
+                  <div className="absolute top-full right-0 mt-2 w-48 glass rounded-xl p-2 shadow-lg z-50 animate-slideDown border border-white/20">
+                    <button
+                      onClick={handleManageProfile}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all duration-200 flex items-center gap-2"
+                    >
+                      <User size={16} />
+                      Manage Profile
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all duration-200 flex items-center gap-2"
+                    >
+                      <LogOut size={16} />
+                      Log Out
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
