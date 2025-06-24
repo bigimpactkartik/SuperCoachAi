@@ -64,21 +64,39 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
 
   const handleSignUp = async () => {
     try {
-      // Check if coach already exists - use limit(1) instead of single()
-      const { data: existingCoaches, error: checkError } = await supabase
+      // Check if coach already exists by email - use limit(1) instead of single()
+      const { data: existingCoachesByEmail, error: emailCheckError } = await supabase
         .from('coaches')
         .select('*')
         .eq('email', formData.email)
         .limit(1);
 
-      if (checkError) {
-        console.error('Error checking existing coach:', checkError);
+      if (emailCheckError) {
+        console.error('Error checking existing coach by email:', emailCheckError);
         setErrors({ email: 'Error checking existing account. Please try again.' });
         return;
       }
 
-      if (existingCoaches && existingCoaches.length > 0) {
+      if (existingCoachesByEmail && existingCoachesByEmail.length > 0) {
         setErrors({ email: 'A coach with this email already exists' });
+        return;
+      }
+
+      // Check if coach already exists by phone number - use limit(1) instead of single()
+      const { data: existingCoachesByPhone, error: phoneCheckError } = await supabase
+        .from('coaches')
+        .select('*')
+        .eq('phone', formData.phone)
+        .limit(1);
+
+      if (phoneCheckError) {
+        console.error('Error checking existing coach by phone:', phoneCheckError);
+        setErrors({ phone: 'Error checking existing account. Please try again.' });
+        return;
+      }
+
+      if (existingCoachesByPhone && existingCoachesByPhone.length > 0) {
+        setErrors({ phone: 'This phone number is already registered' });
         return;
       }
 
@@ -97,7 +115,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthenticated }) => {
         console.error('Insert error:', error);
         if (error.code === '23505') {
           // Handle duplicate key constraint violation
-          setErrors({ email: 'Registration failed due to a database conflict. Please try again or contact support.' });
+          if (error.message.includes('email')) {
+            setErrors({ email: 'A coach with this email already exists' });
+          } else if (error.message.includes('phone')) {
+            setErrors({ phone: 'This phone number is already registered' });
+          } else {
+            setErrors({ email: 'Registration failed due to a database conflict. Please try again or contact support.' });
+          }
         } else {
           setErrors({ email: 'Registration failed. Please try again.' });
         }
